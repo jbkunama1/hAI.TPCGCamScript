@@ -1,0 +1,18 @@
+Port 22
+Protocol 2
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+PermitRootLogin no
+PasswordAuthentication yes
+PubkeyAuthentication no
+ChallengeResponseAuthentication no
+UsePAM yes
+
+Subsystem sftp internal-sftp
+
+AllowUsers tpcgtransfer
+ChrootDirectory /data/output
+X11Forwarding no
+AllowTcpForwarding no

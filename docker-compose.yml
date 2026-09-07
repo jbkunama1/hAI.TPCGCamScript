@@ -1,0 +1,22 @@
+services:
+  hai-tpcg-cam-script:
+    build: .
+    container_name: hai-tpcg-cam-script
+    restart: unless-stopped
+
+    ports:
+      - "8088:8080"
+      - "2222:22"
+      - "9900:990"
+      - "30000-30010:30000-30010"
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./data/input:/data/input
+      - ./data/output:/data/output
+      - ./data/scripts:/data/scripts
+      - ./data/backups:/data/backups
+      - ./data/logs:/data/logs
+      - ./data/config:/data/config
