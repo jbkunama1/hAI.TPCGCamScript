@@ -2,11 +2,111 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>TPCG Live – Platzhalter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TPCG Live</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 1rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 1rem 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .card img {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #000;
+    }
+    .card .caption {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+    .status {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: #888;
+    }
+    .error {
+      color: #ff6b6b;
+    }
+  </style>
 </head>
 <body>
-  <h1>TPCG Live – Platzhalter</h1>
-  <p>Dies ist ein Platzhalter für deine originale tpcg-live.html.</p>
-  <p>Ersetze diese Datei durch deine originale Live-Seite.</p>
+  <h1>TPCG Live – Kamera-Vorschau</h1>
+
+  <div class="grid">
+    <div class="card">
+      <img id="img-eingang" src="" alt="Eingang" />
+      <div class="caption">Eingang (eingang.jpg)</div>
+    </div>
+    <div class="card">
+      <img id="img-lounge" src="" alt="Lounge / Centercourt" />
+      <div class="caption">Lounge / Centercourt (lounge-centercourt.jpg)</div>
+    </div>
+    <div class="card">
+      <img id="img-padel" src="" alt="Padelplatz 1" />
+      <div class="caption">Padelplatz 1 (padelplatz-1.jpg)</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">Lade Bilder…</div>
+
+  <script>
+    // Basis-Pfad relativ zur aktuellen Seite
+    const OUTPUT_BASE = 'output';
+
+    const IMAGES = [
+      { id: 'img-eingang', file: 'eingang.jpg' },
+      { id: 'img-lounge', file: 'lounge-centercourt.jpg' },
+      { id: 'img-padel', file: 'padelplatz-1.jpg' },
+    ];
+
+    const REFRESH_MS = 5000; // alle 5 Sekunden neu laden
+
+    function updateImages() {
+      const now = Date.now();
+      const ts = `?t=${now}`;
+
+      IMAGES.forEach(({ id, file }) => {
+        const img = document.getElementById(id);
+        if (!img) return;
+        const url = `${OUTPUT_BASE}/${file}${ts}`;
+        // Erst neues Bild laden, dann umschalten
+        const tmp = new Image();
+        tmp.onload = () => {
+          img.src = url;
+        };
+        tmp.onerror = () => {
+          // Bild existiert noch nicht – alt lassen oder ausblenden
+        };
+        tmp.src = url;
+      });
+
+      const status = document.getElementById('status');
+      const time = new Date().toLocaleTimeString();
+      status.textContent = `Letzter Refresh: ${time} (alle ${REFRESH_MS / 1000} s)`;
+      status.classList.remove('error');
+    }
+
+    // Initial und dann periodisch
+    updateImages();
+    setInterval(updateImages, REFRESH_MS);
+  </script>
 </body>
 </html>
