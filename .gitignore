@@ -1,0 +1,19 @@
+# Environment
+.env
+
+# Runtime data
+data/
+*.log
+*.jsonl
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# TLS / secrets
+config/ssl/*.key
+config/ssl/*.crt
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*~
