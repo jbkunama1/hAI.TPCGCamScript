@@ -2,8 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>TPCG-Live 🎾 Webcams Tennis- & Padel-Club Grötzingen</title>
-  <meta name="description" content="Webcams Tennis- & Padel-Club Grötzingen" />
+  <title>TPCG-Live 🎾 Webcams TPC Grötzingen</title>
+  <meta name="description" content="Webcams TPC Grötzingen" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="/assets/tpc_logo_75px.jpg" />
   <style>
@@ -23,6 +23,8 @@
     .btn:hover, .btn:focus { background-color: #286090; }
     .btn-admin { background-color: #5cb85c; border-color: #4cae4c; }
     .btn-admin:hover, .btn-admin:focus { background-color: #449d44; }
+    .btn-link { background-color: #8a6d3b; border-color: #7a6532; min-width: 0; }
+    .btn-link:hover, .btn-link:focus { background-color: #6f5a30; }
     .webcam { display: flex; flex-flow: wrap; justify-content: flex-start; gap: 20px; padding: 5px 15px; }
     .cam { max-width: 550px; margin: 10px 0; }
     .cam h3 { margin-bottom: 6px; }
@@ -43,12 +45,12 @@
 <body>
   <div class="container">
     <div class="header-container">
-      <a class="tpcg" href="https://www.tpc-groetzingen.de" title="Tennis- & Padel-Club Grötzingen" target="_blank" rel="noopener">
-        <img class="logo-tpcg" src="/assets/tpc_logo_75px.jpg" alt="TPCG Logo" />
+      <a class="tpcg" href="https://www.tpc-groetzingen.de" title="TPC Grötzingen" target="_blank" rel="noopener">
+        <img class="logo-tpcg" src="/assets/tpc_logo_75px.jpg" alt="TPC Logo" />
       </a>
       <div class="ueberschrift-container">
         <h1>🎾 TPCG-Live</h1>
-        <h2>Webcams Tennis- &amp; Padel-Club Grötzingen</h2>
+        <h2>Webcams TPC Grötzingen</h2>
       </div>
       <a class="lets-netz" href="https://www.tpcg-lets-netz.de" title="Let's Netz" target="_blank" rel="noopener">
         <img class="logo-letsnetz" src="/assets/letsnetz.jpg" alt="Let's Netz" />
@@ -113,8 +115,29 @@
       } catch (e) { /* status.json ist optional */ }
     }
 
+    // Links aus der SQLite-DB (im Admin-Bereich gepflegt)
+    async function loadLinks() {
+      try {
+        const r = await fetch("/api/links");
+        if (!r.ok) return;
+        const d = await r.json();
+        const bar = document.querySelector(".container-text");
+        if (!bar) return;
+        (d.links || []).forEach(function (l) {
+          const a = document.createElement("a");
+          a.className = "btn btn-link";
+          a.href = l.url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.textContent = (l.icon ? l.icon + " " : "") + l.title;
+          bar.appendChild(a);
+        });
+      } catch (e) { /* Links optional */ }
+    }
+
     updateImages();
     setInterval(updateImages, REFRESH_MS);
+    loadLinks();
   </script>
 </body>
 </html>
