@@ -8,10 +8,11 @@ if [ -n "$SFTP_USER" ] && [ -n "$SFTP_PASSWORD" ]; then
     mkdir -p /data/sftp/output
     chown root:root /data/sftp
     chmod 755 /data/sftp
-    chown "$SFTP_USER":"$SFTP_USER" /data/sftp/output || true
 
     useradd -d /data/sftp/output -s /usr/sbin/nologin "$SFTP_USER" || true
     echo "$SFTP_USER:$SFTP_PASSWORD" | chpasswd
+
+    chown "$SFTP_USER":"$SFTP_USER" /data/sftp/output || true
   fi
   echo "$SFTP_USER" >> /etc/vsftpd.userlist
 fi
