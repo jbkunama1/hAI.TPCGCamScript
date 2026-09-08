@@ -34,13 +34,21 @@ else
   log "WARNUNG: SFTP_USER/SFTP_PASSWORD nicht gesetzt - kein FTP-User angelegt"
 fi
 
+# Upload-Unterordner vorbereiten: /data/input bleibt root:root (sshd-Chroot),
+# die Unterordner gehoeren dem Transfer-User, damit die Kameras schreiben koennen
+mkdir -p /data/input/tennis /data/input/padel
+if id "$SFTP_USER" &>/dev/null; then
+  chown -R "$SFTP_USER":"$SFTP_USER" /data/input/tennis /data/input/padel || true
+fi
+log "Upload-Ziele vorbereitet: /data/input/tennis + /data/input/padel (beschreibbar fuer ${SFTP_USER:-<unset>})"
+
 # SSH/SFTP starten (Log direkt in Datei, da kein Syslog im Container laeuft)
 /usr/sbin/sshd -E /data/logs/sshd.log
-log "SFTP/SSH-Server gestartet (Port 22, Log: sshd.log)"
+log "SFTP/SSH-Server gestartet (Port 22, Chroot: /data/input, Log: sshd.log)"
 
 # vsftpd starten
 /usr/sbin/vsftpd /etc/vsftpd/vsftpd.conf &
-log "FTP/FTPS-Server gestartet (Ports 21 + 990, Logs: vsftpd.log / vsftpd-xfer.log)"
+log "FTP/FTPS-Server gestartet (Ports 21 + 990, Upload-Ziel: /data/input, Logs: vsftpd.log / vsftpd-xfer.log)"
 
 # Worker im Hintergrund starten
 export PROCESS_INTERVAL_SECONDS="${PROCESS_INTERVAL_SECONDS:-30}"
