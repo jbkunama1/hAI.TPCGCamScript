@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: Verdana, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f3f4f6; color: #111827; }
-    .shell { max-width: 720px; margin: 2rem auto; padding: 1.5rem 1.75rem; background: #ffffff; border-radius: 0.75rem; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1); }
+    .shell { max-width: 760px; margin: 2rem auto; padding: 1.5rem 1.75rem; background: #ffffff; border-radius: 0.75rem; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1); }
     h1 { margin-top: 0; font-size: 1.4rem; }
     h2 { font-size: 1.05rem; margin: 1.6rem 0 0.5rem; }
     .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; }
@@ -18,11 +18,13 @@
     .theme-option p { margin: 0.15rem 0 0; font-size: 0.88rem; color: #6b7280; }
     button { margin-top: 0.9rem; padding: 0.55rem 1.1rem; border-radius: 999px; border: none; background: #1d4ed8; color: #ffffff; font-size: 0.9rem; cursor: pointer; }
     button:hover { background: #2563eb; }
+    button.danger { background: #b91c1c; margin-top: 0; padding: 0.25rem 0.7rem; font-size: 0.8rem; }
+    button.danger:hover { background: #dc2626; }
     .hint { margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280; }
-    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; margin-bottom: 0.5rem; }
     td, th { border: 1px solid #e5e7eb; padding: 0.35rem 0.5rem; text-align: left; vertical-align: top; }
     textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.85rem; }
-    input[type="text"] { width: 100%; box-sizing: border-box; padding: 0.3rem; margin-bottom: 0.4rem; }
+    input[type="text"], input[type="password"] { width: 100%; box-sizing: border-box; padding: 0.3rem; margin-bottom: 0.4rem; }
     select { padding: 0.3rem; font-size: 0.9rem; }
     pre { background: #111827; color: #d1fae5; padding: 0.75rem; border-radius: 0.5rem; max-height: 320px; overflow: auto; font-size: 0.78rem; white-space: pre-wrap; }
   </style>
@@ -40,7 +42,7 @@
   <h2>🖥️ System-Info</h2>
   <div id="sysinfo">Lade…</div>
 
-  <h2>🎨 Theme-Auswahl</h2>
+  <h2>🎨 Theme-Auswahl (Frontend)</h2>
   <form id="theme-form">
     <div class="theme-option">
       <input type="radio" name="theme" id="theme-default" value="default" checked />
@@ -52,8 +54,8 @@
     <div class="theme-option">
       <input type="radio" name="theme" id="theme-original" value="original" />
       <div>
-        <label for="theme-original">Original (TPCG / Let's Netz)</label>
-        <p>Klassisches Layout mit TPCG-Logo, Let's Netz und Original-CSS.</p>
+        <label for="theme-original">Original (TPC / Let's Netz)</label>
+        <p>Klassisches Layout mit TPC-Logo, Let's Netz und Original-CSS.</p>
       </div>
     </div>
     <div class="theme-option">
@@ -67,7 +69,36 @@
     <div class="hint" id="theme-status"></div>
   </form>
 
-  <h2>📷 Bildpfade</h2>
+  <h2>👥 Benutzer</h2>
+  <div id="user-list">Lade…</div>
+  <form id="user-form">
+    <input type="text" id="user-name" placeholder="Benutzername" required />
+    <input type="password" id="user-pass" placeholder="Passwort (mind. 6 Zeichen)" required />
+    <button type="submit">Benutzer anlegen</button>
+    <div class="hint" id="user-status"></div>
+  </form>
+
+  <h2>🗂️ Bildpfade</h2>
+  <div id="path-list">Lade…</div>
+  <form id="path-form">
+    <input type="text" id="path-key" placeholder="Schlüssel, z. B. tennis" required />
+    <input type="text" id="path-path" placeholder="Pfad unter /output, z. B. tennis/webcam_live.jpg" required />
+    <input type="text" id="path-label" placeholder="Anzeigename (optional)" />
+    <button type="submit">Pfad speichern</button>
+    <div class="hint" id="path-status"></div>
+  </form>
+
+  <h2>🔗 Links (erscheinen auf der Live-Seite)</h2>
+  <div id="link-list">Lade…</div>
+  <form id="link-form">
+    <input type="text" id="link-title" placeholder="Titel" required />
+    <input type="text" id="link-url" placeholder="https://…" required />
+    <input type="text" id="link-icon" placeholder="Icon (Emoji, optional)" />
+    <button type="submit">Link hinzufügen</button>
+    <div class="hint" id="link-status"></div>
+  </form>
+
+  <h2>📷 Bildpfade (aktuell erreichbar)</h2>
   <div id="image-path">Lade…</div>
 
   <h2>🐍 Skript bearbeiten</h2>
@@ -77,6 +108,9 @@
     <button type="submit">Skript speichern</button>
     <div class="hint" id="script-status"></div>
   </form>
+
+  <h2>🧾 Audit (letzte Admin-Aktionen)</h2>
+  <pre id="audit-view">Lade…</pre>
 
   <h2>📄 Logs</h2>
   <select id="log-file"></select>
@@ -93,6 +127,10 @@ async function fetchInfo() {
     let html = "<table>";
     html += "<tr><th>Dienst</th><td>" + d.service + " (v" + d.version + ")</td></tr>";
     html += "<tr><th>Aktives Theme</th><td>" + d.theme + "</td></tr>";
+    if (d.database) {
+      html += "<tr><th>SQLite-DB</th><td>" + d.database.path + "<br>👥 " + d.database.users +
+        " Benutzer · 🗂️ " + d.database.paths + " Pfade · 🔗 " + d.database.links + " Links</td></tr>";
+    }
     html += "<tr><th>Ports</th><td>🌐 HTTP " + d.ports.http.extern + " → " + d.ports.http.intern +
       "<br>📁 FTP " + d.ports.ftp.extern +
       "<br>🔒 FTPS " + d.ports.ftps.extern + " → " + d.ports.ftps.intern +
@@ -137,11 +175,126 @@ document.getElementById("theme-form").addEventListener("submit", async function 
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     document.getElementById("theme-status").textContent =
-      "✅ Theme gespeichert: " + (data.theme || theme) + " – unter /live sofort aktiv.";
+      "✅ Theme gespeichert: " + (data.theme || theme) + " – persistent in der SQLite-DB.";
+    loadAudit();
   } catch (e) {
     document.getElementById("theme-status").textContent = "❌ Fehler beim Speichern: " + e;
   }
 });
+
+/* ---------------- Benutzer ---------------- */
+
+async function loadUsers() {
+  const box = document.getElementById("user-list");
+  try {
+    const r = await fetch("/api/users");
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+    let html = "<table><tr><th>ID</th><th>Benutzer</th><th>Rolle</th><th>Letzter Login</th><th></th></tr>";
+    (d.users || []).forEach(function (u) {
+      html += "<tr><td>" + u.id + "</td><td>" + u.username + "</td><td>" + u.role + "</td><td>" + (u.last_login || "–") +
+        "</td><td><button type='button' class='danger' onclick='deleteUser(" + u.id + ")'>🗑️ Löschen</button></td></tr>";
+    });
+    box.innerHTML = html + "</table>";
+  } catch (e) { box.textContent = "Fehler: " + e; }
+}
+
+async function deleteUser(id) {
+  if (!confirm("Benutzer #" + id + " wirklich löschen?")) return;
+  const r = await fetch("/api/users/" + id, { method: "DELETE" });
+  const d = await r.json();
+  document.getElementById("user-status").textContent = r.ok ? "✅ Benutzer gelöscht" : "❌ " + (d.error || r.status);
+  loadUsers();
+  loadAudit();
+}
+
+document.getElementById("user-form").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  const r = await fetch("/api/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: document.getElementById("user-name").value,
+      password: document.getElementById("user-pass").value
+    })
+  });
+  const d = await r.json();
+  document.getElementById("user-status").textContent = r.ok
+    ? "✅ Benutzer angelegt (ID " + d.id + ")" : "❌ " + (d.error || r.status);
+  if (r.ok) { ev.target.reset(); loadUsers(); loadAudit(); }
+});
+
+/* ---------------- Pfade ---------------- */
+
+async function loadPaths() {
+  const box = document.getElementById("path-list");
+  try {
+    const r = await fetch("/api/paths");
+    const d = await r.json();
+    let html = "<table><tr><th>Schlüssel</th><th>Pfad</th><th>Label</th></tr>";
+    (d.paths || []).forEach(function (p) {
+      html += "<tr><td>" + p.key + "</td><td>/output/" + p.path + "</td><td>" + p.label + "</td></tr>";
+    });
+    box.innerHTML = html + "</table>";
+  } catch (e) { box.textContent = "Fehler: " + e; }
+}
+
+document.getElementById("path-form").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  const r = await fetch("/api/paths", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      key: document.getElementById("path-key").value,
+      path: document.getElementById("path-path").value,
+      label: document.getElementById("path-label").value
+    })
+  });
+  const d = await r.json();
+  document.getElementById("path-status").textContent = r.ok ? "✅ Pfad gespeichert" : "❌ " + (d.error || r.status);
+  if (r.ok) { loadPaths(); fetchImagePath(); loadAudit(); }
+});
+
+/* ---------------- Links ---------------- */
+
+async function loadLinksAdmin() {
+  const box = document.getElementById("link-list");
+  try {
+    const r = await fetch("/api/links");
+    const d = await r.json();
+    let html = "<table><tr><th>Icon</th><th>Titel</th><th>URL</th><th></th></tr>";
+    (d.links || []).forEach(function (l) {
+      html += "<tr><td>" + l.icon + "</td><td>" + l.title + "</td><td><a href='" + l.url + "' target='_blank'>" + l.url + "</a>" +
+        "</td><td><button type='button' class='danger' onclick='deleteLink(" + l.id + ")'>🗑️</button></td></tr>";
+    });
+    box.innerHTML = html + "</table>";
+  } catch (e) { box.textContent = "Fehler: " + e; }
+}
+
+async function deleteLink(id) {
+  const r = await fetch("/api/links/" + id, { method: "DELETE" });
+  document.getElementById("link-status").textContent = r.ok ? "✅ Link gelöscht" : "❌ Fehler beim Löschen";
+  loadLinksAdmin();
+  loadAudit();
+}
+
+document.getElementById("link-form").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  const r = await fetch("/api/links", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: document.getElementById("link-title").value,
+      url: document.getElementById("link-url").value,
+      icon: document.getElementById("link-icon").value
+    })
+  });
+  const d = await r.json();
+  document.getElementById("link-status").textContent = r.ok ? "✅ Link hinzugefügt" : "❌ " + (d.error || r.status);
+  if (r.ok) { ev.target.reset(); loadLinksAdmin(); loadAudit(); }
+});
+
+/* ---------------- Skripte ---------------- */
 
 document.getElementById("script-form").addEventListener("submit", async function (ev) {
   ev.preventDefault();
@@ -155,10 +308,26 @@ document.getElementById("script-form").addEventListener("submit", async function
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     document.getElementById("script-status").textContent = "✅ " + (data.status || "Skript gespeichert");
+    loadAudit();
   } catch (e) {
     document.getElementById("script-status").textContent = "❌ Fehler: " + e;
   }
 });
+
+/* ---------------- Audit ---------------- */
+
+async function loadAudit() {
+  const box = document.getElementById("audit-view");
+  try {
+    const r = await fetch("/api/audit");
+    const d = await r.json();
+    box.textContent = (d.entries && d.entries.length)
+      ? d.entries.map(function (e) { return e.ts + "  " + (e.actor || "-") + "  " + e.action + "  " + (e.details || ""); }).join("\n")
+      : "(noch keine Einträge)";
+  } catch (e) { box.textContent = "Fehler: " + e; }
+}
+
+/* ---------------- Logs ---------------- */
 
 function renderLog(d) {
   document.getElementById("log-view").textContent =
@@ -192,6 +361,10 @@ document.getElementById("log-load").addEventListener("click", async function () 
 fetchInfo();
 fetchImagePath();
 initLogs();
+loadUsers();
+loadPaths();
+loadLinksAdmin();
+loadAudit();
 </script>
 
 </body>

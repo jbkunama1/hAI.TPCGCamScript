@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import sqlite3
 import subprocess
 import sys
 from datetime import datetime
@@ -8,11 +9,13 @@ from pathlib import Path
 from flask import Flask, request, jsonify, send_file, send_from_directory, make_response
 from werkzeug.security import check_password_hash
 
-APP_VERSION = os.getenv("APP_VERSION", "1.1.0")
+from app import db
+
+APP_VERSION = os.getenv("APP_VERSION", "1.2.0")
 
 app = Flask(__name__)
 
-# Konfiguration aus Environment
+# Konfiguration aus Environment (Initial-Bootstrap; danach gilt die SQLite-DB)
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 ADMIN_PASS_HASH = os.getenv("ADMIN_PASS_HASH", "")
@@ -27,7 +30,7 @@ SCRIPTS_DIR = DATA_DIR / "scripts"
 BACKUPS_DIR = DATA_DIR / "backups"
 LOGS_DIR = DATA_DIR / "logs"
 CONFIG_DIR = DATA_DIR / "config"
-THEME_FILE = CONFIG_DIR / "theme.json"
+LEGACY_THEME_FILE = CONFIG_DIR / "theme.json"
 
 WEB_DIR = BASE_DIR / "web"
 ASSETS_DIR = WEB_DIR / "assets"
@@ -55,14 +58,7 @@ if not logger.handlers:
     _sh.setFormatter(_formatter)
     logger.addHandler(_sh)
 
-# Bekannte Live-Bilder (vom camera_worker erzeugt)
-KNOWN_IMAGES = [
-    ("tennis", "tennis/webcam_live.jpg"),
-    ("padel1", "padel/webcam1_live.jpg"),
-    ("padel2", "padel/webcam2_live.jpg"),
-]
-
-VALID_THEMES = ("default", "original", "modern")
+VALID_THEMES = db.VALID_THEMES
 
 # Log-Dateien, die ueber /api/logs abrufbar sind
 LOG_FILES = {
@@ -138,6 +134,10 @@ if not SCRIPT_SINGLE.exists():
 if not SCRIPT_PAIR.exists():
     SCRIPT_PAIR.write_text(DEFAULT_PAIR)
 
+# ----------------- Datenbank -----------------
+
+db.init_db(ADMIN_USER, ADMIN_PASSWORD, ADMIN_PASS_HASH, LEGACY_THEME_FILE)
+
 # ----------------- Auth -----------------
 
 def _unauthorized_response():
@@ -150,6 +150,13 @@ def check_basic_auth():
     auth = request.authorization
     if not auth or auth.type != "basic":
         return False
+    # 1) Datenbank-Benutzer (persistent, ueber Admin-Panel verwaltet)
+    if db.users_exist():
+        ok = db.verify_user(auth.username, auth.password)
+        if ok:
+            db.touch_login(auth.username)
+        return ok
+    # 2) Fallback: Env-Zugang (nur solange die DB noch keine Benutzer hat)
     if auth.username != ADMIN_USER:
         return False
     if ADMIN_PASS_HASH:
@@ -190,6 +197,11 @@ def require_api_key(f):
         return _unauthorized_response()
 
     return wrapper
+
+
+def _actor():
+    auth = request.authorization
+    return auth.username if auth else None
 
 # ----------------- Helpers -----------------
 
@@ -233,14 +245,8 @@ def validate_python_code(code: str):
 
 
 def get_active_theme():
-    try:
-        data = json.loads(THEME_FILE.read_text(encoding="utf-8"))
-        theme = data.get("theme", "default")
-        if theme in VALID_THEMES:
-            return theme
-    except Exception:
-        pass
-    return "default"
+    theme = db.get_setting("theme", "default")
+    return theme if theme in VALID_THEMES else "default"
 
 
 def resolve_live_page() -> Path:
@@ -255,7 +261,6 @@ def resolve_live_page() -> Path:
 def serve_live_page():
     page = resolve_live_page()
     resp = make_response(send_file(page, mimetype="text/html"))
-    # Kein Browser-Cache fuer die HTML-Seite, damit Updates sofort sichtbar sind
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     resp.headers["Pragma"] = "no-cache"
     return resp
@@ -274,7 +279,7 @@ def log_http_response(response):
     )
     return response
 
-# ----------------- Routes -----------------
+# ----------------- Seiten -----------------
 
 @app.get("/")
 def index():
@@ -290,7 +295,7 @@ def live_preview():
 @app.get("/admin")
 @require_auth
 def admin_panel():
-    logger.info("Admin-Panel geoeffnet von %s", request.remote_addr)
+    logger.info("Admin-Panel geoeffnet von %s (%s)", request.remote_addr, _actor())
     resp = make_response(send_file(ADMIN_PAGE, mimetype="text/html"))
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return resp
@@ -303,9 +308,9 @@ def serve_assets(filename):
 
 @app.get("/output/<path:filename>")
 def serve_output(filename):
-    # max_age=0: Browser fragt immer nach, Cache-Busting macht das JS
     return send_from_directory(OUTPUT_DIR, filename, max_age=0)
 
+# ----------------- API: Status & Info -----------------
 
 @app.get("/api/status")
 @require_api_key
@@ -326,7 +331,7 @@ def api_info():
     env = {k: os.getenv(k) for k in env_keys if os.getenv(k) is not None}
     env["API_KEY"] = "gesetzt" if API_KEY else "nicht gesetzt"
     env["ADMIN_PASSWORD"] = (
-        "gesetzt" if (ADMIN_PASSWORD or ADMIN_PASS_HASH) else "nicht gesetzt"
+        "gesetzt (Bootstrap)" if (ADMIN_PASSWORD or ADMIN_PASS_HASH) else "nicht gesetzt"
     )
     return jsonify(
         {
@@ -339,10 +344,17 @@ def api_info():
                 "ftps": {"extern": 9900, "intern": 990},
                 "sftp": {"extern": 2222, "intern": 22},
             },
+            "database": {
+                "path": str(db.DB_PATH),
+                "users": len(db.list_users()),
+                "paths": len(db.list_paths()),
+                "links": len(db.list_links()),
+            },
             "env": env,
         }
     )
 
+# ----------------- API: Theme (DB-persistiert) -----------------
 
 @app.get("/api/theme")
 @require_auth
@@ -359,25 +371,118 @@ def set_theme():
         return jsonify(
             {"error": "Unknown theme", "available": list(VALID_THEMES)}
         ), 400
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    THEME_FILE.write_text(json.dumps({"theme": theme}, indent=2), encoding="utf-8")
+    db.set_setting("theme", theme, actor=_actor())
     write_audit_log("theme_change", {"theme": theme})
-    logger.info("Theme geaendert: %s", theme)
+    logger.info("Theme geaendert: %s (durch %s)", theme, _actor())
     return jsonify({"theme": theme})
 
+# ----------------- API: Bildpfade (DB) -----------------
 
 @app.get("/api/image-path")
 @require_auth
 def get_image_path():
     images = {}
-    for key, rel in KNOWN_IMAGES:
-        if (OUTPUT_DIR / rel).exists():
-            images[key] = f"/output/{rel}"
+    for row in db.list_paths():
+        if (OUTPUT_DIR / row["path"]).exists():
+            images[row["key"]] = f"/output/{row['path']}"
     if not images:
         return jsonify({"error": "Noch keine Live-Bilder vorhanden"}), 404
     first = next(iter(images.values()))
     return jsonify({"path": first, "images": images})
 
+
+@app.get("/api/paths")
+@require_auth
+def api_list_paths():
+    return jsonify({"paths": db.list_paths()})
+
+
+@app.post("/api/paths")
+@require_auth
+def api_upsert_path():
+    body = request.get_json(silent=True) or {}
+    key = (body.get("key") or "").strip()
+    path = (body.get("path") or "").strip().lstrip("/")
+    label = (body.get("label") or "").strip() or key
+    if not key or not path or ".." in path:
+        return jsonify({"error": "key/path ungueltig"}), 400
+    db.upsert_path(key, path, label, actor=_actor())
+    logger.info("Pfad gespeichert: %s -> %s (durch %s)", key, path, _actor())
+    return jsonify({"status": "saved", "key": key})
+
+# ----------------- API: Links (DB; lesen oeffentlich) -----------------
+
+@app.get("/api/links")
+def api_list_links():
+    # Oeffentlich lesbar, damit die Live-Seite die Links rendern kann
+    return jsonify({"links": db.list_links()})
+
+
+@app.post("/api/links")
+@require_auth
+def api_add_link():
+    body = request.get_json(silent=True) or {}
+    title = (body.get("title") or "").strip()
+    url = (body.get("url") or "").strip()
+    if not title or not url.startswith(("http://", "https://")):
+        return jsonify({"error": "Titel fehlt oder URL ungueltig"}), 400
+    lid = db.add_link(
+        title, url, body.get("icon") or "🔗", body.get("position") or 0, actor=_actor()
+    )
+    logger.info("Link angelegt: %s -> %s (durch %s)", title, url, _actor())
+    return jsonify({"status": "created", "id": lid})
+
+
+@app.delete("/api/links/<int:link_id>")
+@require_auth
+def api_delete_link(link_id):
+    ok = db.delete_link(link_id, actor=_actor())
+    if not ok:
+        return jsonify({"error": "Link nicht gefunden"}), 404
+    return jsonify({"status": "deleted", "id": link_id})
+
+# ----------------- API: Benutzer (DB) -----------------
+
+@app.get("/api/users")
+@require_auth
+def api_list_users():
+    return jsonify({"users": db.list_users()})
+
+
+@app.post("/api/users")
+@require_auth
+def api_add_user():
+    body = request.get_json(silent=True) or {}
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    role = body.get("role") or "admin"
+    if not username or len(password) < 6:
+        return jsonify({"error": "Benutzername fehlt oder Passwort < 6 Zeichen"}), 400
+    try:
+        uid = db.add_user(username, password, role, actor=_actor())
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Benutzer existiert bereits"}), 409
+    logger.info("Benutzer angelegt: %s (durch %s)", username, _actor())
+    return jsonify({"status": "created", "id": uid})
+
+
+@app.delete("/api/users/<int:user_id>")
+@require_auth
+def api_delete_user(user_id):
+    ok, msg = db.delete_user(user_id, actor=_actor())
+    if not ok:
+        return jsonify({"error": msg}), 400
+    logger.info("Benutzer geloescht: id=%s (durch %s)", user_id, _actor())
+    return jsonify({"status": msg, "id": user_id})
+
+# ----------------- API: Audit (DB) -----------------
+
+@app.get("/api/audit")
+@require_auth
+def api_audit():
+    return jsonify({"entries": db.list_audit(100)})
+
+# ----------------- API: Skripte -----------------
 
 @app.get("/api/scripts")
 @require_auth
@@ -423,6 +528,7 @@ def save_script(name):
 
     path.write_text(code)
     write_audit_log("script_save", {"name": name, "size": len(code)})
+    db.add_audit("script_save", {"name": name, "size": len(code)}, actor=_actor())
     logger.info("Skript gespeichert: %s (%d Zeichen)", name, len(code))
 
     return jsonify({"status": "saved", "name": name})
@@ -475,9 +581,11 @@ def update_script():
 
     script_path.write_text(script_code)
     write_audit_log("script_update", {"name": script_name, "size": len(script_code)})
+    db.add_audit("script_update", {"name": script_name}, actor=_actor())
     logger.info("Skript aktualisiert: %s (%d Zeichen)", script_name, len(script_code))
     return jsonify({"status": "Script updated"})
 
+# ----------------- API: Logs -----------------
 
 @app.get("/api/logs")
 @require_auth
@@ -500,10 +608,12 @@ def log_startup():
     logger.info("hAI.TPCGCamScript v%s - Flask-App initialisiert", APP_VERSION)
     logger.info("DATA_DIR=%s | WEB_DIR=%s", DATA_DIR, WEB_DIR)
     logger.info(
-        "User: admin=%s sftp=%s ftps=%s",
-        ADMIN_USER,
-        os.getenv("SFTP_USER", "<unset>"),
-        os.getenv("FTPS_USER", "<unset>"),
+        "SQLite-DB: %s | Benutzer=%d Pfade=%d Links=%d | Theme=%s",
+        db.DB_PATH,
+        len(db.list_users()),
+        len(db.list_paths()),
+        len(db.list_links()),
+        get_active_theme(),
     )
     logger.info(
         "Worker-Intervall=%ss | Ollama=%s",
