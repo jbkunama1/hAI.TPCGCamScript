@@ -2,126 +2,87 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>TPCG Live – Modern Theme</title>
+  <title>TPCG-Live 🌙 Webcams TPC Grötzingen</title>
+  <meta name="description" content="Webcams TPC Grötzingen – Modern (dunkles UI)" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/assets/tpc_logo_75px.jpg" />
+  <link rel="stylesheet" href="/assets/themes/base.css" />
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0b1120;
-      color: #e5e7eb;
-    }
-    header {
-      padding: 1.5rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: linear-gradient(90deg, #111827, #1f2937);
-      border-bottom: 1px solid #1f2937;
-    }
-    header h1 {
-      font-size: 1.4rem;
-      margin: 0;
-    }
-    header h2 {
-      font-size: 0.9rem;
-      margin: 0;
-      color: #9ca3af;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.5rem;
-      padding: 1.5rem 2rem 2rem;
-    }
-    .card {
-      background: #111827;
-      border-radius: 0.75rem;
-      border: 1px solid #1f2937;
-      box-shadow: 0 10px 40px rgba(15, 23, 42, 0.75);
-      overflow: hidden;
-    }
-    .card header {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #1f2937;
-      background: #0f172a;
-    }
-    .card header h3 {
-      margin: 0;
-      font-size: 0.95rem;
-    }
-    .card img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-    .footer {
-      padding: 0.75rem 2rem 1.5rem;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 0.85rem;
-      color: #9ca3af;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.5rem 0.9rem;
-      border-radius: 999px;
-      border: 1px solid #2563eb;
-      background: #1d4ed8;
-      color: #e5e7eb;
-      font-size: 0.85rem;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background: #2563eb;
-      border-color: #3b82f6;
+    :root {
+      --maxw: 1200px;
+      --radius: 12px;
+      --btn-radius: 4px;
+      --img-radius: 8px;
+      --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --h-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --h-shadow: none;
+      --btn-text: #ffffff;
+      --bg: #0b1120;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --accent: #1d4ed8;
+      --accent-border: #2563eb;
+      --accent-hover: #2563eb;
+      --accent-2: #0d9488;
+      --accent-2-border: #14b8a6;
+      --accent-2-hover: #14b8a6;
+      --link-bg: #374151;
+      --link-border: #4b5563;
+      --link-hover: #4b5563;
+      --h-color: #f9fafb;
+      --header-bg: linear-gradient(90deg,#111827 0%,#1f2937 100%);
+      --header-border: 1px solid #1f2937;
+      --img-bg: #000000;
+      --shadow: rgba(15,23,42,0.75);
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="header-container">
+      <a class="tpcg" href="https://www.tpc-groetzingen.de" title="TPC Grötzingen" target="_blank" rel="noopener">
+        <img class="logo logo-tpcg" src="/assets/tpc_logo_75px.jpg" alt="TPC Logo" />
+      </a>
+      <div class="ueberschrift-container">
+        <h1>🌙 TPCG-Live</h1>
+        <h2>Webcams TPC Grötzingen · Modern (dunkles UI)</h2>
+      </div>
+      <a class="lets-netz" href="https://www.tpcg-lets-netz.de" title="Let's Netz" target="_blank" rel="noopener">
+        <img class="logo logo-letsnetz" src="/assets/letsnetz.jpg" alt="Let's Netz" />
+      </a>
+    </div>
 
-<header>
-  <div>
-    <h1>TPCG Live-Webcams</h1>
-    <h2>Tennis &amp; Padel – Modern Preview</h2>
+    <div class="action-bar">
+      <p>📷 Den Club aus der Ferne erleben. Regelmäßige Bildaufnahme, außer nachts.</p>
+      <a class="btn" href="#" onclick="updateImages(); return false;">🔄 Aktualisieren</a>
+      <a class="btn btn-admin" href="/admin">🔐 Admin-Bereich</a>
+    </div>
+
+    <div class="webcam">
+      <div class="cam">
+        <h3>🎾 Tennis</h3>
+        <img src="/assets/platzhalter.jpg" data-src="/output/tennis/webcam_live.jpg" alt="Webcam Tennis" title="Webcam Tennis" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+        <p><i>Eingangsbereich der Anlage bei den Tennisplätzen 4+5.</i></p>
+      </div>
+      <div class="cam-row">
+        <div class="cam">
+          <h3>🏟️ Padel – Plätze 2+3+4</h3>
+          <img src="/assets/platzhalter.jpg" data-src="/output/padel/webcam1_live.jpg" alt="Webcam Padelplätze 2-4" title="Webcam Padelplätze 2-4" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+          <p><i>Blick auf die Padelplätze 2+3+4.</i></p>
+        </div>
+        <div class="cam">
+          <h3>🏟️ Padel – Platz 1 / Center Court</h3>
+          <img src="/assets/platzhalter.jpg" data-src="/output/padel/webcam2_live.jpg" alt="Webcam Padelplatz 1" title="Webcam Padelplatz 1" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+          <p><i>Padelplatz 1 + Center Court.</i></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">⏳ Lade Bilder…</div>
   </div>
-</header>
 
-<main class="grid">
-  <section class="card">
-    <header>
-      <h3>Tennis-Center Court</h3>
-    </header>
-    <img src="/output/tennis/webcam_live.jpg" alt="Tennis Webcam live" />
-  </section>
-
-  <section class="card">
-    <header>
-      <h3>Padel – Platz 1</h3>
-    </header>
-    <img src="/output/padel/webcam1_live.jpg" alt="Padel Webcam 1 live" />
-  </section>
-
-  <section class="card">
-    <header>
-      <h3>Padel – Platz 2</h3>
-    </header>
-    <img src="/output/padel/webcam2_live.jpg" alt="Padel Webcam 2 live" />
-  </section>
-</main>
-
-<div class="footer">
-  <span>Alle 30 Sekunden aktualisiert</span>
-  <button class="btn" onclick="window.location.reload();">
-    Ansicht aktualisieren
-  </button>
-</div>
-
+  <script src="/assets/themes/live.js"></script>
 </body>
 </html>

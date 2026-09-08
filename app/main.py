@@ -11,7 +11,7 @@ from werkzeug.security import check_password_hash
 
 from app import db
 
-APP_VERSION = os.getenv("APP_VERSION", "1.2.0")
+APP_VERSION = os.getenv("APP_VERSION", "1.3.0")
 
 app = Flask(__name__)
 
@@ -57,8 +57,6 @@ if not logger.handlers:
     _sh = logging.StreamHandler(sys.stdout)
     _sh.setFormatter(_formatter)
     logger.addHandler(_sh)
-
-VALID_THEMES = db.VALID_THEMES
 
 # Log-Dateien, die ueber /api/logs abrufbar sind
 LOG_FILES = {
@@ -244,9 +242,21 @@ def validate_python_code(code: str):
         Path(tmp_path).unlink(missing_ok=True)
 
 
+def available_themes():
+    """Alle verfuegbaren Themes = 'default' + jedes Verzeichnis in web/themes mit live.html."""
+    themes = ["default"]
+    try:
+        for p in sorted(THEMES_DIR.iterdir()):
+            if p.is_dir() and (p / "live.html").exists():
+                themes.append(p.name)
+    except Exception:
+        pass
+    return themes
+
+
 def get_active_theme():
     theme = db.get_setting("theme", "default")
-    return theme if theme in VALID_THEMES else "default"
+    return theme if theme in available_themes() else "default"
 
 
 def resolve_live_page() -> Path:
@@ -338,6 +348,7 @@ def api_info():
             "service": "hAI.TPCGCamScript",
             "version": APP_VERSION,
             "theme": get_active_theme(),
+            "themes_available": available_themes(),
             "ports": {
                 "http": {"extern": 8067, "intern": 8080},
                 "ftp": {"extern": 21, "intern": 21},
@@ -354,12 +365,12 @@ def api_info():
         }
     )
 
-# ----------------- API: Theme (DB-persistiert) -----------------
+# ----------------- API: Theme (DB-persistiert, dynamisch erkannt) -----------------
 
 @app.get("/api/theme")
 @require_auth
 def get_theme():
-    return jsonify({"theme": get_active_theme(), "available": list(VALID_THEMES)})
+    return jsonify({"theme": get_active_theme(), "available": available_themes()})
 
 
 @app.post("/api/theme")
@@ -367,9 +378,9 @@ def get_theme():
 def set_theme():
     body = request.get_json(silent=True) or {}
     theme = body.get("theme", "default")
-    if theme not in VALID_THEMES:
+    if theme not in available_themes():
         return jsonify(
-            {"error": "Unknown theme", "available": list(VALID_THEMES)}
+            {"error": "Unknown theme", "available": available_themes()}
         ), 400
     db.set_setting("theme", theme, actor=_actor())
     write_audit_log("theme_change", {"theme": theme})
@@ -615,6 +626,7 @@ def log_startup():
         len(db.list_links()),
         get_active_theme(),
     )
+    logger.info("Themes verfuegbar: %s", ", ".join(available_themes()))
     logger.info(
         "Worker-Intervall=%ss | Ollama=%s",
         os.getenv("PROCESS_INTERVAL_SECONDS", "30"),

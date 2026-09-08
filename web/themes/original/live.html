@@ -2,63 +2,87 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>TPCG Live-Webcams – Tennis & Padel</title>
+  <title>TPCG-Live 🎾 Webcams TPC Grötzingen</title>
+  <meta name="description" content="Webcams TPC Grötzingen – Original (TPC / Let's Netz)" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="/assets/tpc_logo_75px.jpg" />
-  <link rel="stylesheet" href="/assets/webcam.css" />
+  <link rel="stylesheet" href="/assets/themes/base.css" />
+  <style>
+    :root {
+      --maxw: none;
+      --radius: 15px;
+      --btn-radius: 4px;
+      --img-radius: 8px;
+      --font: Verdana, Helvetica, Arial, sans-serif;
+      --h-font: Courier, Verdana, Helvetica, Arial, sans-serif;
+      --h-shadow: none;
+      --btn-text: #ffffff;
+      --bg: #f4f4f4;
+      --panel: #ffffff;
+      --text: #111111;
+      --muted: #555555;
+      --border: #cccccc;
+      --accent: #337ab7;
+      --accent-border: #2e6da4;
+      --accent-hover: #286090;
+      --accent-2: #5cb85c;
+      --accent-2-border: #4cae4c;
+      --accent-2-hover: #449d44;
+      --link-bg: #8a6d3b;
+      --link-border: #7a6532;
+      --link-hover: #6f5a30;
+      --h-color: #000000;
+      --header-bg: linear-gradient(90deg,#ffffff 0%,#ffffff 50%,#ffdea8 100%);
+      --header-border: 1px solid #ffdea8;
+      --img-bg: #ffffff;
+      --shadow: rgba(102,102,102,0.5);
+    }
+  </style>
 </head>
 <body>
-
-<div class="container">
-  <div class="header-container">
-    <a class="tpcg" href="https://www.tpc-groetzingen.de" title="Tennis- & Padel-Club Grötzingen" target="_blank" rel="noopener">
-      <img src="/assets/tpc_logo_75px.jpg" alt="TPCG Logo" class="logo-tpcg" />
-    </a>
-    <div class="ueberschrift-container">
-      <h1>🎾 TPCG Live-Webcams</h1>
-      <h2>Tennis &amp; Padel – aktuelle Platzansicht</h2>
+  <div class="container">
+    <div class="header-container">
+      <a class="tpcg" href="https://www.tpc-groetzingen.de" title="TPC Grötzingen" target="_blank" rel="noopener">
+        <img class="logo logo-tpcg" src="/assets/tpc_logo_75px.jpg" alt="TPC Logo" />
+      </a>
+      <div class="ueberschrift-container">
+        <h1>🎾 TPCG-Live</h1>
+        <h2>Webcams TPC Grötzingen · Original (TPC / Let's Netz)</h2>
+      </div>
+      <a class="lets-netz" href="https://www.tpcg-lets-netz.de" title="Let's Netz" target="_blank" rel="noopener">
+        <img class="logo logo-letsnetz" src="/assets/letsnetz.jpg" alt="Let's Netz" />
+      </a>
     </div>
-    <a class="lets-netz" href="https://www.tpcg-lets-netz.de" title="Let's Netz" target="_blank" rel="noopener">
-      <img src="/assets/letsnetz.jpg" alt="Let's Netz" class="logo-letsnetz" />
-    </a>
+
+    <div class="action-bar">
+      <p>📷 Den Club aus der Ferne erleben. Regelmäßige Bildaufnahme, außer nachts.</p>
+      <a class="btn" href="#" onclick="updateImages(); return false;">🔄 Aktualisieren</a>
+      <a class="btn btn-admin" href="/admin">🔐 Admin-Bereich</a>
+    </div>
+
+    <div class="webcam">
+      <div class="cam">
+        <h3>🎾 Tennis</h3>
+        <img src="/assets/platzhalter.jpg" data-src="/output/tennis/webcam_live.jpg" alt="Webcam Tennis" title="Webcam Tennis" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+        <p><i>Eingangsbereich der Anlage bei den Tennisplätzen 4+5.</i></p>
+      </div>
+      <div class="cam-row">
+        <div class="cam">
+          <h3>🏟️ Padel – Plätze 2+3+4</h3>
+          <img src="/assets/platzhalter.jpg" data-src="/output/padel/webcam1_live.jpg" alt="Webcam Padelplätze 2-4" title="Webcam Padelplätze 2-4" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+          <p><i>Blick auf die Padelplätze 2+3+4.</i></p>
+        </div>
+        <div class="cam">
+          <h3>🏟️ Padel – Platz 1 / Center Court</h3>
+          <img src="/assets/platzhalter.jpg" data-src="/output/padel/webcam2_live.jpg" alt="Webcam Padelplatz 1" title="Webcam Padelplatz 1" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+          <p><i>Padelplatz 1 + Center Court.</i></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">⏳ Lade Bilder…</div>
   </div>
 
-  <div class="container-text">
-    <p>📷 Den Club aus der Ferne erleben. Regelmäßige Bildaufnahme, außer nachts.</p>
-    <div class="aktualisieren"><a href="#" onclick="updateImages(); return false;">🔄 Ansicht aktualisieren</a></div>
-    <div class="aktualisieren"><a href="/admin" style="background-color:#5cb85c; border-color:#4cae4c;">🔐 Admin-Bereich</a></div>
-  </div>
-
-  <div class="webcam">
-    <div class="webcamtennis">
-      <h3>🎾 Tennis-Center Court</h3>
-      <img class="webcambildreal" src="/assets/platzhalter.jpg" data-src="/output/tennis/webcam_live.jpg" alt="Tennis Webcam live" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
-    </div>
-    <div class="webcampadel1">
-      <h3>🏟️ Padel – Platz 1</h3>
-      <img class="webcambildreal" src="/assets/platzhalter.jpg" data-src="/output/padel/webcam1_live.jpg" alt="Padel Webcam 1 live" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
-    </div>
-    <div class="webcampadel2">
-      <h3>🏟️ Padel – Platz 2</h3>
-      <img class="webcambildreal" src="/assets/platzhalter.jpg" data-src="/output/padel/webcam2_live.jpg" alt="Padel Webcam 2 live" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
-    </div>
-  </div>
-</div>
-
-<script>
-  const REFRESH_MS = 30000;
-  function updateImages() {
-    const ts = Date.now();
-    document.querySelectorAll("img[data-src]").forEach(function (img) {
-      const url = img.dataset.src + "?t=" + ts;
-      const tmp = new Image();
-      tmp.onload = function () { img.src = url; };
-      tmp.src = url;
-    });
-  }
-  updateImages();
-  setInterval(updateImages, REFRESH_MS);
-</script>
-
+  <script src="/assets/themes/live.js"></script>
 </body>
 </html>
