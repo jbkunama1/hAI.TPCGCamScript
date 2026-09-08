@@ -1,6 +1,6 @@
 services:
-  hai-tpcg-cam-script:
-    build: .
+  hai-tpcgcamscript:
+    image: ghcr.io/jbkunama1/hai.tpcgcamscript:latest
     container_name: hai-tpcg-cam-script
     restart: unless-stopped
 
@@ -20,6 +20,7 @@ services:
       SFTP_PASSWORD: ${SFTP_PASSWORD}
       FTPS_USER: ${FTPS_USER:-tpcgtransfer}
       FTPS_PASSWORD: ${FTPS_PASSWORD}
+      DATA_ROOT: ${DATA_ROOT:-/opt/hai-tpcg-cam-script/data}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://cam.example.de}
       PROCESS_INTERVAL_SECONDS: ${PROCESS_INTERVAL_SECONDS:-30}
       OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
@@ -27,9 +28,17 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llava}
 
     volumes:
-      - ${DATA_ROOT:-/opt/hai-tpcg-cam-script/data}/input:/data/input
-      - ${DATA_ROOT:-/opt/hai-tpcg-cam-script/data}/output:/data/output
-      - ${DATA_ROOT:-/opt/hai-tpcg-cam-script/data}/scripts:/data/scripts
-      - ${DATA_ROOT:-/opt/hai-tpcg-cam-script/data}/backups:/data/backups
-      - ${DATA_ROOT:-/opt/hai-tpcg-cam-script/data}/logs:/data/logs
-      - ${DATA_ROOT:-/opt/hai-tpcg-cam-script/data}/config:/data/config
+      - /opt/hai-tpcg-cam-script/data/input:/data/input
+      - /opt/hai-tpcg-cam-script/data/output:/data/output
+      - /opt/hai-tpcg-cam-script/data/scripts:/data/scripts
+      - /opt/hai-tpcg-cam-script/data/backups:/data/backups
+      - /opt/hai-tpcg-cam-script/data/logs:/data/logs
+      - /opt/hai-tpcg-cam-script/data/config:/data/config
+
+    networks:
+      - highfishNetwork
+
+networks:
+  highfishNetwork:
+    external: true
+    name: highfishNetwork
