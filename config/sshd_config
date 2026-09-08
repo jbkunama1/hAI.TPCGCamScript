@@ -16,3 +16,6 @@ AllowUsers tpcgtransfer
 ChrootDirectory /data/output
 X11Forwarding no
 AllowTcpForwarding no
+
+# Ausfuehrliches Auth-Logging (Ziel: /data/logs/sshd.log via sshd -E im Entrypoint)
+LogLevel VERBOSE

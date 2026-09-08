@@ -2,79 +2,60 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>TPCG Live – Theme-Auswahl</title>
+  <title>TPCG – Admin-Bereich ⚙️</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f3f4f6;
-      color: #111827;
-    }
-    .shell {
-      max-width: 640px;
-      margin: 2rem auto;
-      padding: 1.5rem 1.75rem;
-      background: #ffffff;
-      border-radius: 0.75rem;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
-    }
-    h1 {
-      margin-top: 0;
-      font-size: 1.4rem;
-    }
-    .theme-option {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .theme-option:last-child {
-      border-bottom: none;
-    }
-    .theme-option label {
-      font-weight: 600;
-    }
-    .theme-option p {
-      margin: 0.15rem 0 0;
-      font-size: 0.9rem;
-      color: #6b7280;
-    }
-    button {
-      margin-top: 1.25rem;
-      padding: 0.55rem 1.1rem;
-      border-radius: 999px;
-      border: none;
-      background: #1d4ed8;
-      color: #ffffff;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #2563eb;
-    }
-    .hint {
-      margin-top: 0.75rem;
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
+    body { font-family: Verdana, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f3f4f6; color: #111827; }
+    .shell { max-width: 720px; margin: 2rem auto; padding: 1.5rem 1.75rem; background: #ffffff; border-radius: 0.75rem; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1); }
+    h1 { margin-top: 0; font-size: 1.4rem; }
+    h2 { font-size: 1.05rem; margin: 1.6rem 0 0.5rem; }
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; }
+    .nav a { color: #1d4ed8; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+    .theme-option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid #e5e7eb; }
+    .theme-option:last-of-type { border-bottom: none; }
+    .theme-option label { font-weight: 600; }
+    .theme-option p { margin: 0.15rem 0 0; font-size: 0.88rem; color: #6b7280; }
+    button { margin-top: 0.9rem; padding: 0.55rem 1.1rem; border-radius: 999px; border: none; background: #1d4ed8; color: #ffffff; font-size: 0.9rem; cursor: pointer; }
+    button:hover { background: #2563eb; }
+    .hint { margin-top: 0.5rem; font-size: 0.85rem; color: #6b7280; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    td, th { border: 1px solid #e5e7eb; padding: 0.35rem 0.5rem; text-align: left; vertical-align: top; }
+    textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.85rem; }
+    input[type="text"] { width: 100%; box-sizing: border-box; padding: 0.3rem; margin-bottom: 0.4rem; }
+    select { padding: 0.3rem; font-size: 0.9rem; }
+    pre { background: #111827; color: #d1fae5; padding: 0.75rem; border-radius: 0.5rem; max-height: 320px; overflow: auto; font-size: 0.78rem; white-space: pre-wrap; }
   </style>
 </head>
 <body>
 
 <div class="shell">
-  <h1>Live-Webcam Theme-Auswahl</h1>
+  <div class="nav">
+    <span>⚙️ <strong>Admin-Bereich</strong></span>
+    <a href="/live">🏠 Zur Live-Ansicht</a>
+  </div>
+
+  <h1>TPCG Live – Verwaltung</h1>
+
+  <h2>🖥️ System-Info</h2>
+  <div id="sysinfo">Lade…</div>
+
+  <h2>🎨 Theme-Auswahl</h2>
   <form id="theme-form">
     <div class="theme-option">
-      <input type="radio" name="theme" id="theme-original" value="original" checked />
+      <input type="radio" name="theme" id="theme-default" value="default" checked />
       <div>
-        <label for="theme-original">Original (TPCG / Let’s Netz)</label>
-        <p>Klassisches Layout mit TPCG-Logo, Let’s Netz und Platzhalterbildern.</p>
+        <label for="theme-default">Standard (TPCG-Landing)</label>
+        <p>Neue Startseite im Original-Look mit Auto-Refresh und Admin-Link.</p>
       </div>
     </div>
-
+    <div class="theme-option">
+      <input type="radio" name="theme" id="theme-original" value="original" />
+      <div>
+        <label for="theme-original">Original (TPCG / Let's Netz)</label>
+        <p>Klassisches Layout mit TPCG-Logo, Let's Netz und Original-CSS.</p>
+      </div>
+    </div>
     <div class="theme-option">
       <input type="radio" name="theme" id="theme-modern" value="modern" />
       <div>
@@ -82,90 +63,135 @@
         <p>Schlichte, dunkle Live-Ansicht mit Kartenlayout.</p>
       </div>
     </div>
-
     <button type="submit">Theme speichern</button>
     <div class="hint" id="theme-status"></div>
   </form>
 
-  <h2>Bildpfad</h2>
-  <div id="image-path"></div>
+  <h2>📷 Bildpfade</h2>
+  <div id="image-path">Lade…</div>
 
-  <h2>Skript bearbeiten</h2>
+  <h2>🐍 Skript bearbeiten</h2>
   <form id="script-form">
-    <div>
-      <label for="script-name">Skriptname:</label>
-      <input type="text" id="script-name" name="name" required />
-    </div>
-    <div>
-      <label for="script-code">Skriptcode:</label>
-      <textarea id="script-code" name="code" rows="10" required></textarea>
-    </div>
+    <input type="text" id="script-name" name="name" placeholder="Skriptname, z. B. process_single.py" required />
+    <textarea id="script-code" name="code" rows="10" required></textarea>
     <button type="submit">Skript speichern</button>
     <div class="hint" id="script-status"></div>
   </form>
+
+  <h2>📄 Logs</h2>
+  <select id="log-file"></select>
+  <button type="button" id="log-load">🔄 Log laden</button>
+  <pre id="log-view">Noch kein Log geladen.</pre>
 </div>
 
 <script>
-document.getElementById("theme-form").addEventListener("submit", async function (ev) {
-  ev.preventDefault();
-  const formData = new FormData(ev.target);
-  const theme = formData.get("theme");
+async function fetchInfo() {
   try {
-    const resp = await fetch("/api/theme", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ theme })
-    });
-    if (!resp.ok) {
-      throw new Error("HTTP " + resp.status);
-    }
-    const data = await resp.json();
-    document.getElementById("theme-status").textContent =
-      "Theme gespeichert: " + (data.theme || theme);
+    const r = await fetch("/api/info");
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    let html = "<table>";
+    html += "<tr><th>Dienst</th><td>" + d.service + " (v" + d.version + ")</td></tr>";
+    html += "<tr><th>Aktives Theme</th><td>" + d.theme + "</td></tr>";
+    html += "<tr><th>Ports</th><td>🌐 HTTP " + d.ports.http.extern + " → " + d.ports.http.intern +
+      "<br>📁 FTP " + d.ports.ftp.extern +
+      "<br>🔒 FTPS " + d.ports.ftps.extern + " → " + d.ports.ftps.intern +
+      "<br>🔑 SFTP " + d.ports.sftp.extern + " → " + d.ports.sftp.intern + "</td></tr>";
+    html += "<tr><th>Umgebung</th><td>" +
+      Object.entries(d.env).map(function (e) { return e[0] + " = " + e[1]; }).join("<br>") +
+      "</td></tr></table>";
+    document.getElementById("sysinfo").innerHTML = html;
+    const radio = document.querySelector('input[name="theme"][value="' + d.theme + '"]');
+    if (radio) radio.checked = true;
   } catch (e) {
-    document.getElementById("theme-status").textContent =
-      "Fehler beim Speichern: " + e;
+    document.getElementById("sysinfo").textContent = "Fehler beim Laden: " + e;
   }
-});
+}
 
 async function fetchImagePath() {
   try {
     const resp = await fetch("/api/image-path");
-    if (!resp.ok) {
-      throw new Error("HTTP " + resp.status);
-    }
     const data = await resp.json();
-    document.getElementById("image-path").textContent = data.path;
+    if (!resp.ok) throw new Error(data.error || ("HTTP " + resp.status));
+    if (data.images) {
+      document.getElementById("image-path").innerHTML = Object.entries(data.images)
+        .map(function (e) { return "📷 " + e[0] + ': <a href="' + e[1] + '" target="_blank">' + e[1] + "</a>"; })
+        .join("<br>");
+    } else {
+      document.getElementById("image-path").textContent = data.path;
+    }
   } catch (e) {
-    document.getElementById("image-path").textContent =
-      "Fehler beim Abrufen des Bildpfads: " + e;
+    document.getElementById("image-path").textContent = "Fehler: " + e;
   }
 }
 
-fetchImagePath();
+document.getElementById("theme-form").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  const theme = new FormData(ev.target).get("theme");
+  try {
+    const resp = await fetch("/api/theme", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: theme })
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    document.getElementById("theme-status").textContent =
+      "✅ Theme gespeichert: " + (data.theme || theme) + " – unter /live sofort aktiv.";
+  } catch (e) {
+    document.getElementById("theme-status").textContent = "❌ Fehler beim Speichern: " + e;
+  }
+});
 
 document.getElementById("script-form").addEventListener("submit", async function (ev) {
   ev.preventDefault();
-  const formData = new FormData(ev.target);
-  const scriptName = formData.get("name");
-  const scriptCode = formData.get("code");
+  const fd = new FormData(ev.target);
   try {
     const resp = await fetch("/api/script", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: scriptName, code: scriptCode })
+      body: JSON.stringify({ name: fd.get("name"), code: fd.get("code") })
     });
-    if (!resp.ok) {
-      throw new Error("HTTP " + resp.status);
-    }
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
-    document.getElementById("script-status").textContent =
-      "Skript gespeichert: " + (data.status || "OK");
+    document.getElementById("script-status").textContent = "✅ " + (data.status || "Skript gespeichert");
   } catch (e) {
-    document.getElementById("script-status").textContent =
-      "Fehler beim Speichern des Skripts: " + e;
+    document.getElementById("script-status").textContent = "❌ Fehler: " + e;
   }
 });
+
+function renderLog(d) {
+  document.getElementById("log-view").textContent =
+    (d.lines && d.lines.length) ? d.lines.join("\n") : "(leer – noch keine Einträge)";
+}
+
+async function initLogs() {
+  try {
+    const r = await fetch("/api/logs?file=server");
+    const d = await r.json();
+    const sel = document.getElementById("log-file");
+    (d.available || ["server"]).forEach(function (f) {
+      const o = document.createElement("option");
+      o.value = f;
+      o.textContent = f;
+      sel.appendChild(o);
+    });
+    sel.value = d.file || "server";
+    renderLog(d);
+  } catch (e) {
+    document.getElementById("log-view").textContent = "Fehler beim Laden der Logs: " + e;
+  }
+}
+
+document.getElementById("log-load").addEventListener("click", async function () {
+  const f = document.getElementById("log-file").value;
+  const r = await fetch("/api/logs?file=" + encodeURIComponent(f));
+  renderLog(await r.json());
+});
+
+fetchInfo();
+fetchImagePath();
+initLogs();
 </script>
 
 </body>

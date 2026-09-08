@@ -29,8 +29,13 @@ RUN python3 -m venv /venv && /venv/bin/pip install --no-cache-dir -r requirement
 COPY app/ ./app/
 COPY scripts/ ./scripts/
 COPY web/ ./web/
+
+# Assets (Logos, Platzhalter, Original-CSS/JS) aus _original ins Image uebernehmen
+COPY _original/tpc_logo_75px.jpg _original/letsnetz.jpg _original/platzhalter.jpg ./web/assets/
+COPY _original/webcam.css _original/webcam.js _original/jquery.js ./web/assets/
+
 RUN chmod +x scripts/*.sh
 
-EXPOSE 22 990 8080
+EXPOSE 21 22 990 8080
 
 ENTRYPOINT ["/app/scripts/entrypoint.sh"]
