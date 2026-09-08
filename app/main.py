@@ -205,6 +205,14 @@ def serve_output(filename):
 def api_status():
     return jsonify({"service": "hAI.TPCGCamScript", "status": "running"})
 
+@app.get("/api/image-path")
+@require_auth
+def get_image_path():
+    image_path = OUTPUT_DIR / "eingang.jpg"
+    if not image_path.exists():
+        return jsonify({"error": "Image not found"}), 404
+    return jsonify({"path": f"/output/{image_path.name}"})
+
 
 @app.get("/api/scripts")
 @require_auth
@@ -285,6 +293,23 @@ def run_script(name):
         return jsonify({"error": "Script timed out"}), 504
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.post("/api/script")
+@require_auth
+def update_script():
+    body = request.get_json(silent=True) or {}
+    script_name = body.get("name", "")
+    script_code = body.get("code", "")
+
+    if not script_name or not script_code:
+        return jsonify({"error": "Invalid request"}), 400
+
+    script_path = SCRIPTS_DIR / script_name
+    if not script_path.exists():
+        return jsonify({"error": "Script not found"}), 404
+
+    script_path.write_text(script_code)
+    return jsonify({"status": "Script updated"})
 
 
 @app.get("/api/logs")

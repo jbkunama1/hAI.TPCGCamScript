@@ -86,6 +86,23 @@
     <button type="submit">Theme speichern</button>
     <div class="hint" id="theme-status"></div>
   </form>
+
+  <h2>Bildpfad</h2>
+  <div id="image-path"></div>
+
+  <h2>Skript bearbeiten</h2>
+  <form id="script-form">
+    <div>
+      <label for="script-name">Skriptname:</label>
+      <input type="text" id="script-name" name="name" required />
+    </div>
+    <div>
+      <label for="script-code">Skriptcode:</label>
+      <textarea id="script-code" name="code" rows="10" required></textarea>
+    </div>
+    <button type="submit">Skript speichern</button>
+    <div class="hint" id="script-status"></div>
+  </form>
 </div>
 
 <script>
@@ -108,6 +125,45 @@ document.getElementById("theme-form").addEventListener("submit", async function 
   } catch (e) {
     document.getElementById("theme-status").textContent =
       "Fehler beim Speichern: " + e;
+  }
+});
+
+async function fetchImagePath() {
+  try {
+    const resp = await fetch("/api/image-path");
+    if (!resp.ok) {
+      throw new Error("HTTP " + resp.status);
+    }
+    const data = await resp.json();
+    document.getElementById("image-path").textContent = data.path;
+  } catch (e) {
+    document.getElementById("image-path").textContent =
+      "Fehler beim Abrufen des Bildpfads: " + e;
+  }
+}
+
+fetchImagePath();
+
+document.getElementById("script-form").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  const formData = new FormData(ev.target);
+  const scriptName = formData.get("name");
+  const scriptCode = formData.get("code");
+  try {
+    const resp = await fetch("/api/script", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: scriptName, code: scriptCode })
+    });
+    if (!resp.ok) {
+      throw new Error("HTTP " + resp.status);
+    }
+    const data = await resp.json();
+    document.getElementById("script-status").textContent =
+      "Skript gespeichert: " + (data.status || "OK");
+  } catch (e) {
+    document.getElementById("script-status").textContent =
+      "Fehler beim Speichern des Skripts: " + e;
   }
 });
 </script>
