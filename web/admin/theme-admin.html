@@ -12,10 +12,9 @@
     .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; }
     .nav a { color: #1d4ed8; text-decoration: none; }
     .nav a:hover { text-decoration: underline; }
-    .theme-option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid #e5e7eb; }
-    .theme-option:last-of-type { border-bottom: none; }
-    .theme-option label { font-weight: 600; }
-    .theme-option p { margin: 0.15rem 0 0; font-size: 0.88rem; color: #6b7280; }
+    .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.4rem; }
+    .theme-option { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.88rem; }
+    .theme-option label { font-weight: 600; cursor: pointer; }
     button { margin-top: 0.9rem; padding: 0.55rem 1.1rem; border-radius: 999px; border: none; background: #1d4ed8; color: #ffffff; font-size: 0.9rem; cursor: pointer; }
     button:hover { background: #2563eb; }
     button.danger { background: #b91c1c; margin-top: 0; padding: 0.25rem 0.7rem; font-size: 0.8rem; }
@@ -44,27 +43,7 @@
 
   <h2>🎨 Theme-Auswahl (Frontend)</h2>
   <form id="theme-form">
-    <div class="theme-option">
-      <input type="radio" name="theme" id="theme-default" value="default" checked />
-      <div>
-        <label for="theme-default">Standard (TPCG-Landing)</label>
-        <p>Neue Startseite im Original-Look mit Auto-Refresh und Admin-Link.</p>
-      </div>
-    </div>
-    <div class="theme-option">
-      <input type="radio" name="theme" id="theme-original" value="original" />
-      <div>
-        <label for="theme-original">Original (TPC / Let's Netz)</label>
-        <p>Klassisches Layout mit TPC-Logo, Let's Netz und Original-CSS.</p>
-      </div>
-    </div>
-    <div class="theme-option">
-      <input type="radio" name="theme" id="theme-modern" value="modern" />
-      <div>
-        <label for="theme-modern">Modern (dunkles UI)</label>
-        <p>Schlichte, dunkle Live-Ansicht mit Kartenlayout.</p>
-      </div>
-    </div>
+    <div class="theme-grid" id="theme-options">Lade Themes…</div>
     <button type="submit">Theme speichern</button>
     <div class="hint" id="theme-status"></div>
   </form>
@@ -119,6 +98,43 @@
 </div>
 
 <script>
+const THEME_LABELS = {
+  "default": "⭐ Standard",
+  "original": "🟠 Original",
+  "modern": "🌙 Modern dunkel",
+  "fruehjahr-hell": "🌸 Frühjahr hell",
+  "fruehjahr-dunkel": "🌸 Frühjahr dunkel",
+  "sommer-hell": "☀️ Sommer hell",
+  "sommer-dunkel": "🌙 Sommer dunkel",
+  "herbst-hell": "🍂 Herbst hell",
+  "herbst-dunkel": "🍂 Herbst dunkel",
+  "winter-hell": "❄️ Winter hell",
+  "winter-dunkel": "❄️ Winter dunkel",
+  "80s-hell": "🕹️ 80s hell",
+  "80s-dunkel": "🕹️ 80s Synthwave",
+  "70s-hell": "📻 70s hell",
+  "70s-dunkel": "📻 70s dunkel",
+  "4k-hell": "🖥️ 4K Ultra hell",
+  "4k-dunkel": "🖥️ 4K Ultra dunkel",
+  "sport-hell": "⚽ Sportlich hell",
+  "sport-dunkel": "⚽ Sportlich dunkel"
+};
+
+async function loadThemeOptions(current) {
+  const box = document.getElementById("theme-options");
+  try {
+    const r = await fetch("/api/theme");
+    const d = await r.json();
+    const active = current || d.theme;
+    box.innerHTML = (d.available || []).map(function (t) {
+      const label = THEME_LABELS[t] || t;
+      const checked = (t === active) ? " checked" : "";
+      return '<div class="theme-option"><input type="radio" name="theme" id="theme-' + t + '" value="' + t + '"' + checked + ' />' +
+        '<label for="theme-' + t + '">' + label + '</label></div>';
+    }).join("");
+  } catch (e) { box.textContent = "Fehler: " + e; }
+}
+
 async function fetchInfo() {
   try {
     const r = await fetch("/api/info");
@@ -126,7 +142,7 @@ async function fetchInfo() {
     const d = await r.json();
     let html = "<table>";
     html += "<tr><th>Dienst</th><td>" + d.service + " (v" + d.version + ")</td></tr>";
-    html += "<tr><th>Aktives Theme</th><td>" + d.theme + "</td></tr>";
+    html += "<tr><th>Aktives Theme</th><td>" + d.theme + " (" + (d.themes_available || []).length + " verfügbar)</td></tr>";
     if (d.database) {
       html += "<tr><th>SQLite-DB</th><td>" + d.database.path + "<br>👥 " + d.database.users +
         " Benutzer · 🗂️ " + d.database.paths + " Pfade · 🔗 " + d.database.links + " Links</td></tr>";
@@ -139,10 +155,10 @@ async function fetchInfo() {
       Object.entries(d.env).map(function (e) { return e[0] + " = " + e[1]; }).join("<br>") +
       "</td></tr></table>";
     document.getElementById("sysinfo").innerHTML = html;
-    const radio = document.querySelector('input[name="theme"][value="' + d.theme + '"]');
-    if (radio) radio.checked = true;
+    loadThemeOptions(d.theme);
   } catch (e) {
     document.getElementById("sysinfo").textContent = "Fehler beim Laden: " + e;
+    loadThemeOptions(null);
   }
 }
 
@@ -175,7 +191,8 @@ document.getElementById("theme-form").addEventListener("submit", async function 
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     document.getElementById("theme-status").textContent =
-      "✅ Theme gespeichert: " + (data.theme || theme) + " – persistent in der SQLite-DB.";
+      "✅ Theme gespeichert: " + (data.theme || theme) + " – persistent in der SQLite-DB, unter /live sofort aktiv.";
+    loadThemeOptions(data.theme || theme);
     loadAudit();
   } catch (e) {
     document.getElementById("theme-status").textContent = "❌ Fehler beim Speichern: " + e;
