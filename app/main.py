@@ -3,7 +3,7 @@ import json
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_file, send_from_directory, redirect, make_response
 from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
@@ -95,6 +95,12 @@ if not SCRIPT_PAIR.exists():
 
 # ----------------- Auth -----------------
 
+def _unauthorized_response():
+    resp = make_response(jsonify({"error": "Unauthorized"}), 401)
+    resp.headers["WWW-Authenticate"] = 'Basic realm="TPCG Admin"'
+    return resp
+
+
 def check_basic_auth():
     auth = request.authorization
     if not auth or auth.type != "basic":
@@ -105,17 +111,22 @@ def check_basic_auth():
         return check_password_hash(ADMIN_PASS_HASH, auth.password)
     return auth.password == ADMIN_PASSWORD
 
+
 def require_auth(f):
     from functools import wraps
+
     @wraps(f)
     def wrapper(*args, **kwargs):
         if not check_basic_auth():
-            return jsonify({"error": "Unauthorized"}), 401
+            return _unauthorized_response()
         return f(*args, **kwargs)
+
     return wrapper
+
 
 def require_api_key(f):
     from functools import wraps
+
     @wraps(f)
     def wrapper(*args, **kwargs):
         key = request.headers.get("X-API-Key", "")
@@ -123,7 +134,8 @@ def require_api_key(f):
             return f(*args, **kwargs)
         if check_basic_auth():
             return f(*args, **kwargs)
-        return jsonify({"error": "Unauthorized"}), 401
+        return _unauthorized_response()
+
     return wrapper
 
 # ----------------- Helpers -----------------
@@ -133,10 +145,11 @@ def write_audit_log(action, details):
     entry = {
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "action": action,
-        "details": details
+        "details": details,
     }
     with log_file.open("a") as f:
         f.write(json.dumps(entry) + "\n")
+
 
 def backup_script(path: Path):
     if not path.exists():
@@ -146,8 +159,12 @@ def backup_script(path: Path):
     backup_path = BACKUPS_DIR / backup_name
     backup_path.write_bytes(path.read_bytes())
 
+
 def validate_python_code(code: str):
-    import tempfile, subprocess, sys
+    import tempfile
+    import subprocess
+    import sys
+
     with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
         f.write(code)
         tmp_path = f.name
@@ -155,7 +172,7 @@ def validate_python_code(code: str):
         result = subprocess.run(
             [sys.executable, "-m", "py_compile", tmp_path],
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode != 0:
             return False, result.stderr
@@ -163,49 +180,47 @@ def validate_python_code(code: str):
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
+
 # ----------------- Routes -----------------
 
 @app.get("/")
 @require_auth
 def dashboard():
-    return jsonify({
-        "service": "hAI.TPCGCamScript",
-        "status": "running",
-        "links": {
-            "live": "/live",
-            "api_status": "/api/status",
-            "scripts": "/api/scripts",
-            "logs": "/api/logs"
-        }
-    })
+    # Nach erfolgreicher Auth direkt auf die Live-Seite weiterleiten
+    return redirect("/live")
+
 
 @app.get("/live")
 def live_preview():
     return send_file(LIVE_PAGE, mimetype="text/html")
 
+
 @app.get("/output/<path:filename>")
 def serve_output(filename):
     return send_from_directory(OUTPUT_DIR, filename)
 
+
 @app.get("/api/status")
 @require_api_key
 def api_status():
-    return jsonify({
-        "service": "hAI.TPCGCamScript",
-        "status": "running"
-    })
+    return jsonify({"service": "hAI.TPCGCamScript", "status": "running"})
+
 
 @app.get("/api/scripts")
 @require_auth
 def list_scripts():
     scripts = []
     for p in SCRIPTS_DIR.glob("*.py"):
-        scripts.append({
-            "name": p.name,
-            "size": p.stat().st_size,
-            "modified": datetime.utcfromtimestamp(p.stat().st_mtime).isoformat() + "Z"
-        })
+        scripts.append(
+            {
+                "name": p.name,
+                "size": p.stat().st_size,
+                "modified": datetime.utcfromtimestamp(p.stat().st_mtime).isoformat()
+                + "Z",
+            }
+        )
     return jsonify({"scripts": scripts})
+
 
 @app.get("/api/scripts/<name>")
 @require_auth
@@ -213,10 +228,8 @@ def get_script(name):
     path = SCRIPTS_DIR / name
     if not path.exists() or not name.endswith(".py"):
         return jsonify({"error": "Script not found"}), 404
-    return jsonify({
-        "name": name,
-        "code": path.read_text()
-    })
+    return jsonify({"name": name, "code": path.read_text()})
+
 
 @app.post("/api/scripts/<name>")
 @require_auth
@@ -230,10 +243,7 @@ def save_script(name):
 
     ok, err = validate_python_code(code)
     if not ok:
-        return jsonify({
-            "error": "Invalid Python code",
-            "details": err
-        }), 400
+        return jsonify({"error": "Invalid Python code", "details": err}), 400
 
     if path.exists():
         backup_script(path)
@@ -243,6 +253,7 @@ def save_script(name):
 
     return jsonify({"status": "saved", "name": name})
 
+
 @app.post("/api/scripts/<name>/run")
 @require_auth
 def run_script(name):
@@ -250,19 +261,21 @@ def run_script(name):
     if not path.exists() or not name.endswith(".py"):
         return jsonify({"error": "Script not found"}), 404
 
-    import subprocess, sys
+    import subprocess
+    import sys
+
     try:
         result = subprocess.run(
             [sys.executable, str(path)],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
         log_entry = {
             "script": name,
             "returncode": result.returncode,
             "stdout": result.stdout,
-            "stderr": result.stderr
+            "stderr": result.stderr,
         }
         (LOGS_DIR / "script_runs.jsonl").open("a").write(
             json.dumps(log_entry) + "\n"
@@ -273,6 +286,7 @@ def run_script(name):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.get("/api/logs")
 @require_auth
 def get_logs():
@@ -281,6 +295,7 @@ def get_logs():
         return jsonify({"lines": []})
     lines = log_file.read_text().splitlines()[-200:]
     return jsonify({"lines": lines})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
