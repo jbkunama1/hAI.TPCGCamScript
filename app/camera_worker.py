@@ -1,5 +1,7 @@
 import os
 import json
+import logging
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -14,11 +16,24 @@ CONFIG_DIR = DATA_ROOT / "config"
 
 STATUS_FILE = OUTPUT_DIR / "status.json"
 
-TENnis_MIN_SIZE = 80000      # Bytes, wie in webcambilder-aktualisieren.php
-PADEL_MIN_SIZE = 20000       # Bytes für Padel-Bilder
-TENnis_TARGET_SIZE = (896, 672)
-TENnis_CROP_SIZE = (896, 504)
+TENNIS_MIN_SIZE = 80000      # Bytes, wie in webcambilder-aktualisieren.php
+PADEL_MIN_SIZE = 20000       # Bytes fuer Padel-Bilder
+TENNIS_TARGET_SIZE = (896, 672)
+TENNIS_CROP_SIZE = (896, 504)
 PADEL_TARGET_SIZE = (896, 504)
+
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+logger = logging.getLogger("tpcg-worker")
+logger.setLevel(logging.INFO)
+_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+if not logger.handlers:
+    _fh = logging.FileHandler(LOGS_DIR / "worker.log", encoding="utf-8")
+    _fh.setFormatter(_formatter)
+    logger.addHandler(_fh)
+    _sh = logging.StreamHandler(sys.stdout)
+    _sh.setFormatter(_formatter)
+    logger.addHandler(_sh)
 
 
 def _ensure_dirs():
@@ -31,8 +46,8 @@ def _ensure_dirs():
 
 def process_tennis():
     """
-    Verarbeitet /data/input/tennis/webcam.jpg → /data/output/tennis/webcam_live.jpg
-    mit Resize und Crop gemäß deiner PHP-Logik.
+    Verarbeitet /data/input/tennis/webcam.jpg -> /data/output/tennis/webcam_live.jpg
+    mit Resize und Crop gemaess der PHP-Logik.
     """
     _ensure_dirs()
     src_dir = INPUT_DIR / "tennis"
@@ -47,33 +62,35 @@ def process_tennis():
         return {"processed": False, "reason": "not_a_file"}
 
     size = src_file.stat().st_size
-    if size <= TENnis_MIN_SIZE:
+    if size <= TENNIS_MIN_SIZE:
         return {"processed": False, "reason": f"file_too_small_{size}"}
 
     try:
         with Image.open(src_file) as img:
             # Resize auf 896x672
-            resized = img.resize(TENnis_TARGET_SIZE, Image.LANCZOS)
+            resized = img.resize(TENNIS_TARGET_SIZE, Image.LANCZOS)
 
             # Crop auf 896x504 (oberer Teil)
-            cropped = resized.crop((0, 0, TENnis_CROP_SIZE[0], TENnis_CROP_SIZE[1]))
+            cropped = resized.crop((0, 0, TENNIS_CROP_SIZE[0], TENNIS_CROP_SIZE[1]))
 
             dst_dir.mkdir(parents=True, exist_ok=True)
             cropped.save(dst_file, format="JPEG", quality=50, optimize=True)
 
-        # Originalaufnahme löschen wie in PHP
+        # Originalaufnahme loeschen wie in PHP
         src_file.unlink(missing_ok=True)
 
+        logger.info("Tennis: %s -> %s (%d Bytes Quelle)", src_file.name, dst_file, size)
         return {"processed": True, "output": str(dst_file)}
 
     except Exception as e:
+        logger.exception("Tennis-Verarbeitung fehlgeschlagen: %r", e)
         return {"processed": False, "reason": f"error_{e!r}"}
 
 
 def _collect_padel_candidates(today_dir: Path):
     """
-    Sucht im heutigen Padel-Ordner nach gültigen Dateien und trennt sie
-    in Arrays für Padel_00 und Padel_01, wie in deiner PHP-Implementierung.
+    Sucht im heutigen Padel-Ordner nach gueltigen Dateien und trennt sie
+    in Arrays fuer Padel_00 und Padel_01, wie in der PHP-Implementierung.
     """
     if not today_dir.is_dir():
         return [], []
@@ -86,7 +103,7 @@ def _collect_padel_candidates(today_dir: Path):
         if not entry.is_file():
             continue
 
-        # Mindestgröße prüfen (Upload beginnt mit 0 Bytes)
+        # Mindestgroesse pruefen (Upload beginnt mit 0 Bytes)
         if entry.stat().st_size <= PADEL_MIN_SIZE:
             continue
 
@@ -132,6 +149,7 @@ def process_padel():
             resized2 = img2.resize(PADEL_TARGET_SIZE, Image.LANCZOS)
             resized2.save(dst2, format="JPEG", quality=50, optimize=True)
 
+        logger.info("Padel: %s + %s -> %s, %s", src1.name, src2.name, dst1, dst2)
         return {
             "processed": True,
             "output1": str(dst1),
@@ -139,6 +157,7 @@ def process_padel():
         }
 
     except Exception as e:
+        logger.exception("Padel-Verarbeitung fehlgeschlagen: %r", e)
         return {"processed": False, "reason": f"error_{e!r}"}
 
 
@@ -156,26 +175,37 @@ def write_status(last_tennis, last_padel):
     STATUS_FILE.write_text(json.dumps(status, indent=2), encoding="utf-8")
 
 
+def _fmt(res):
+    return "OK" if res.get("processed") else res.get("reason", "unknown")
+
+
 def run_once():
     _ensure_dirs()
     tennis_result = process_tennis()
     padel_result = process_padel()
     write_status(tennis_result, padel_result)
+    logger.info(
+        "Verarbeitungslauf: tennis=%s | padel=%s",
+        _fmt(tennis_result),
+        _fmt(padel_result),
+    )
     return tennis_result, padel_result
 
 
 def start_worker(interval_seconds: int = 30):
     """
     Endlos-Worker, der alle `interval_seconds` die Bilder aktualisiert.
-    Diese Funktion kann z.B. aus app.main in einem Hintergrund-Thread
-    gestartet werden.
     """
     _ensure_dirs()
+    logger.info(
+        "Camera-Worker gestartet: Intervall=%ss | Input=%s | Output=%s",
+        interval_seconds, INPUT_DIR, OUTPUT_DIR,
+    )
     while True:
         try:
             run_once()
         except Exception as e:
-            # Minimaler Fallback-Log: Fehler in eine einfache Datei schreiben
+            logger.exception("Fehler im Worker-Lauf: %r", e)
             LOGS_DIR.mkdir(parents=True, exist_ok=True)
             log_file = LOGS_DIR / "worker-errors.log"
             with log_file.open("a", encoding="utf-8") as fh:
@@ -184,6 +214,5 @@ def start_worker(interval_seconds: int = 30):
 
 
 if __name__ == "__main__":
-    # Standalone-Ausführung: z.B. zum Testen
     interval = int(os.getenv("PROCESS_INTERVAL_SECONDS", "30"))
     start_worker(interval_seconds=interval)

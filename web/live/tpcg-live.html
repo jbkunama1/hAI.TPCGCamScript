@@ -1,110 +1,118 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TPCG Live</title>
+  <meta charset="utf-8" />
+  <title>TPCG-Live 🎾 Webcams Tennis- & Padel-Club Grötzingen</title>
+  <meta name="description" content="Webcams Tennis- & Padel-Club Grötzingen" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/assets/tpc_logo_75px.jpg" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0f0f0f;
-      color: #e0e0e0;
-      margin: 0;
-      padding: 1rem;
+    /* Angelehnt an das Original (_original/webcam.css) */
+    body { font-family: Verdana, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+    h1, h2, h3 { font-family: Courier, Verdana, Helvetica, Arial, sans-serif; margin: 0; padding: 0; text-align: center; }
+    h1 { color: #000; font-size: 42px; font-weight: 800; line-height: 1em; margin: 5px 0; letter-spacing: 1px; text-transform: uppercase; }
+    h2 { font-family: Verdana, Helvetica, Arial, sans-serif; color: #000; font-style: italic; font-size: 15px; font-weight: normal; line-height: 1em; letter-spacing: 1px; }
+    .container { border-bottom-right-radius: 15px; background-image: linear-gradient(to right, #fff, #ffdea8); box-shadow: 0 0 5px 0 rgb(102, 102, 102); padding-bottom: 15px; }
+    .header-container { display: flex; flex-flow: wrap; justify-content: space-between; align-items: center; padding: 10px 15px; border-bottom: 1px solid #ffdea8; background-image: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 50%, rgba(255,222,168,1) 100%); }
+    .header-container .ueberschrift-container { padding: 0 10px; margin: 0 auto; }
+    img.logo-tpcg { max-height: 75px; height: auto; }
+    img.logo-letsnetz { max-height: 75px; height: auto; border: 1px solid #000; }
+    .container-text { display: flex; flex-flow: wrap; align-items: center; gap: 10px; padding: 10px 15px; }
+    .container-text p { margin: 5px 0; flex: 1 1 260px; }
+    .btn { border-radius: 4px; min-width: 170px; font-size: 14px; background-color: #337ab7; border: 1px solid #2e6da4; color: #fff; padding: 12px; text-align: center; text-decoration: none; display: inline-block; box-shadow: 1px 1px 2px 1px rgba(153,153,153,1); transition: all 0.2s ease-out; }
+    .btn:hover, .btn:focus { background-color: #286090; }
+    .btn-admin { background-color: #5cb85c; border-color: #4cae4c; }
+    .btn-admin:hover, .btn-admin:focus { background-color: #449d44; }
+    .webcam { display: flex; flex-flow: wrap; justify-content: flex-start; gap: 20px; padding: 5px 15px; }
+    .cam { max-width: 550px; margin: 10px 0; }
+    .cam h3 { margin-bottom: 6px; }
+    .cam img { width: 100%; max-width: 550px; height: auto; display: block; border-radius: 8px; border: 1px solid #000; box-shadow: 0 0 5px 0 rgb(102, 102, 102); background: #fff; }
+    .cam p { margin: 6px 0 0; }
+    .status { padding: 8px 15px 0; font-size: 13px; color: #555; }
+    @media only screen and (max-width: 630px) {
+      .header-container .tpcg { order: 1; }
+      .header-container .lets-netz { order: 2; }
+      .header-container .ueberschrift-container { order: 3; }
     }
-    h1 {
-      font-size: 1.4rem;
-      margin: 0 0 1rem 0;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-    }
-    .card {
-      background: #1a1a1a;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .card img {
-      width: 100%;
-      height: auto;
-      display: block;
-      background: #000;
-    }
-    .card .caption {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.9rem;
-      color: #aaa;
-    }
-    .status {
-      margin-top: 1.5rem;
-      font-size: 0.85rem;
-      color: #888;
-    }
-    .error {
-      color: #ff6b6b;
+    @media only screen and (max-width: 460px) {
+      h1 { font-size: 26px; }
+      h2 { font-size: 12px; }
     }
   </style>
 </head>
 <body>
-  <h1>TPCG Live – Kamera-Vorschau</h1>
+  <div class="container">
+    <div class="header-container">
+      <a class="tpcg" href="https://www.tpc-groetzingen.de" title="Tennis- & Padel-Club Grötzingen" target="_blank" rel="noopener">
+        <img class="logo-tpcg" src="/assets/tpc_logo_75px.jpg" alt="TPCG Logo" />
+      </a>
+      <div class="ueberschrift-container">
+        <h1>🎾 TPCG-Live</h1>
+        <h2>Webcams Tennis- &amp; Padel-Club Grötzingen</h2>
+      </div>
+      <a class="lets-netz" href="https://www.tpcg-lets-netz.de" title="Let's Netz" target="_blank" rel="noopener">
+        <img class="logo-letsnetz" src="/assets/letsnetz.jpg" alt="Let's Netz" />
+      </a>
+    </div>
 
-  <div class="grid">
-    <div class="card">
-      <img id="img-eingang" src="" alt="Eingang" />
-      <div class="caption">Eingang (eingang.jpg)</div>
+    <div class="container-text">
+      <p>📷 Den Club aus der Ferne erleben. Regelmäßige Bildaufnahme, außer nachts. Die Bilder aktualisieren sich automatisch alle 30 Sekunden.</p>
+      <a class="btn" href="#" onclick="updateImages(); return false;">🔄 Aktualisieren</a>
+      <a class="btn btn-admin" href="/admin">🔐 Admin-Bereich</a>
     </div>
-    <div class="card">
-      <img id="img-lounge" src="" alt="Lounge / Centercourt" />
-      <div class="caption">Lounge / Centercourt (lounge-centercourt.jpg)</div>
+
+    <div class="webcam">
+      <div class="cam">
+        <h3>🎾 Tennis</h3>
+        <img id="img-tennis" src="/assets/platzhalter.jpg" data-src="/output/tennis/webcam_live.jpg" alt="Webcam Eingangsbereich" title="Webcam Eingangsbereich" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+        <p><i>Eingangsbereich der Anlage bei den Tennisplätzen 4+5.</i></p>
+      </div>
+      <div class="cam">
+        <h3>🏟️ Padel – Plätze 2+3+4</h3>
+        <img id="img-padel1" src="/assets/platzhalter.jpg" data-src="/output/padel/webcam1_live.jpg" alt="Webcam Padelplätze 2-4" title="Webcam Padelplätze 2-4" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+        <p><i>Blick auf die Padelplätze 2+3+4.</i></p>
+      </div>
+      <div class="cam">
+        <h3>🏟️ Padel – Platz 1 / Center Court</h3>
+        <img id="img-padel2" src="/assets/platzhalter.jpg" data-src="/output/padel/webcam2_live.jpg" alt="Webcam Padelplatz 1" title="Webcam Padelplatz 1" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+        <p><i>Padelplatz 1 + Center Court.</i></p>
+      </div>
     </div>
-    <div class="card">
-      <img id="img-padel" src="" alt="Padelplatz 1" />
-      <div class="caption">Padelplatz 1 (padelplatz-1.jpg)</div>
-    </div>
+
+    <div class="status" id="status">⏳ Lade Bilder…</div>
   </div>
 
-  <div class="status" id="status">Lade Bilder…</div>
-
   <script>
-    // Basis-Pfad relativ zur aktuellen Seite
-    const OUTPUT_BASE = 'output';
-
-    const IMAGES = [
-      { id: 'img-eingang', file: 'eingang.jpg' },
-      { id: 'img-lounge', file: 'lounge-centercourt.jpg' },
-      { id: 'img-padel', file: 'padelplatz-1.jpg' },
-    ];
-
-    const REFRESH_MS = 5000; // alle 5 Sekunden neu laden
+    const REFRESH_MS = 30000; // wie im Original: alle 30 s
+    const CAM_IDS = ["img-tennis", "img-padel1", "img-padel2"];
 
     function updateImages() {
-      const now = Date.now();
-      const ts = `?t=${now}`;
-
-      IMAGES.forEach(({ id, file }) => {
+      const ts = Date.now();
+      CAM_IDS.forEach(function (id) {
         const img = document.getElementById(id);
         if (!img) return;
-        const url = `${OUTPUT_BASE}/${file}${ts}`;
-        // Erst neues Bild laden, dann umschalten
+        const url = img.dataset.src + "?t=" + ts;
         const tmp = new Image();
-        tmp.onload = () => {
-          img.src = url;
-        };
-        tmp.onerror = () => {
-          // Bild existiert noch nicht – alt lassen oder ausblenden
-        };
+        tmp.onload = function () { img.src = url; };
         tmp.src = url;
       });
-
-      const status = document.getElementById('status');
-      const time = new Date().toLocaleTimeString();
-      status.textContent = `Letzter Refresh: ${time} (alle ${REFRESH_MS / 1000} s)`;
-      status.classList.remove('error');
+      const now = new Date().toLocaleTimeString("de-DE");
+      const status = document.getElementById("status");
+      status.textContent = "✅ Letzter Refresh: " + now + " (automatisch alle " + (REFRESH_MS / 1000) + " s)";
+      fetchWorkerStatus(status);
     }
 
-    // Initial und dann periodisch
+    async function fetchWorkerStatus(statusEl) {
+      try {
+        const r = await fetch("/output/status.json?t=" + Date.now());
+        if (!r.ok) return;
+        const s = await r.json();
+        if (s && s.last_run) {
+          statusEl.textContent += " | ⚙️ Worker zuletzt aktiv: " + s.last_run;
+        }
+      } catch (e) { /* status.json ist optional */ }
+    }
+
     updateImages();
     setInterval(updateImages, REFRESH_MS);
   </script>

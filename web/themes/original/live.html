@@ -4,68 +4,61 @@
   <meta charset="utf-8" />
   <title>TPCG Live-Webcams – Tennis & Padel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/assets/tpc_logo_75px.jpg" />
   <link rel="stylesheet" href="/assets/webcam.css" />
-  <script src="/assets/jquery.js"></script>
-  <script src="/assets/webcam.js"></script>
 </head>
 <body>
 
 <div class="container">
   <div class="header-container">
-    <div class="tpcg">
-      <img src="/assets/TPCG-Logo_Original.jpg"
-           alt="TPCG Logo"
-           class="logo-tpcg" />
-    </div>
+    <a class="tpcg" href="https://www.tpc-groetzingen.de" title="Tennis- & Padel-Club Grötzingen" target="_blank" rel="noopener">
+      <img src="/assets/tpc_logo_75px.jpg" alt="TPCG Logo" class="logo-tpcg" />
+    </a>
     <div class="ueberschrift-container">
-      <h1>TPCG Live-Webcams</h1>
+      <h1>🎾 TPCG Live-Webcams</h1>
       <h2>Tennis &amp; Padel – aktuelle Platzansicht</h2>
     </div>
-    <div class="lets-netz">
-      <img src="/assets/letsnetz.jpg"
-           alt="Let's Netz"
-           class="logo-letsnetz" />
-    </div>
-  </div>
-
-  <div class="webcam header-container">
-    <div class="webcamtennis">
-      <h3>Tennis-Center Court</h3>
-      <div class="webcambildplatzhalter">
-        <img src="/assets/platzhalter.jpg" alt="Platzhalter Tennis" />
-      </div>
-      <div class="webcambildreal">
-        <img src="/output/tennis/webcam_live.jpg" alt="Tennis Webcam live" />
-      </div>
-    </div>
-
-    <div class="webcampadel1">
-      <h3>Padel – Platz 1</h3>
-      <div class="webcambildplatzhalter">
-        <img src="/assets/platzhalter.jpg" alt="Platzhalter Padel 1" />
-      </div>
-      <div class="webcambildreal">
-        <img src="/output/padel/webcam1_live.jpg" alt="Padel Webcam 1 live" />
-      </div>
-    </div>
-
-    <div class="webcampadel2">
-      <h3>Padel – Platz 2</h3>
-      <div class="webcambildplatzhalter">
-        <img src="/assets/platzhalter.jpg" alt="Platzhalter Padel 2" />
-      </div>
-      <div class="webcambildreal">
-        <img src="/output/padel/webcam2_live.jpg" alt="Padel Webcam 2 live" />
-      </div>
-    </div>
+    <a class="lets-netz" href="https://www.tpcg-lets-netz.de" title="Let's Netz" target="_blank" rel="noopener">
+      <img src="/assets/letsnetz.jpg" alt="Let's Netz" class="logo-letsnetz" />
+    </a>
   </div>
 
   <div class="container-text">
-    <div class="aktualisieren">
-      <a href="javascript:window.location.reload();">Ansicht aktualisieren</a>
+    <p>📷 Den Club aus der Ferne erleben. Regelmäßige Bildaufnahme, außer nachts.</p>
+    <div class="aktualisieren"><a href="#" onclick="updateImages(); return false;">🔄 Ansicht aktualisieren</a></div>
+    <div class="aktualisieren"><a href="/admin" style="background-color:#5cb85c; border-color:#4cae4c;">🔐 Admin-Bereich</a></div>
+  </div>
+
+  <div class="webcam">
+    <div class="webcamtennis">
+      <h3>🎾 Tennis-Center Court</h3>
+      <img class="webcambildreal" src="/assets/platzhalter.jpg" data-src="/output/tennis/webcam_live.jpg" alt="Tennis Webcam live" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+    </div>
+    <div class="webcampadel1">
+      <h3>🏟️ Padel – Platz 1</h3>
+      <img class="webcambildreal" src="/assets/platzhalter.jpg" data-src="/output/padel/webcam1_live.jpg" alt="Padel Webcam 1 live" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
+    </div>
+    <div class="webcampadel2">
+      <h3>🏟️ Padel – Platz 2</h3>
+      <img class="webcambildreal" src="/assets/platzhalter.jpg" data-src="/output/padel/webcam2_live.jpg" alt="Padel Webcam 2 live" onerror="this.onerror=null; this.src='/assets/platzhalter.jpg';" />
     </div>
   </div>
 </div>
+
+<script>
+  const REFRESH_MS = 30000;
+  function updateImages() {
+    const ts = Date.now();
+    document.querySelectorAll("img[data-src]").forEach(function (img) {
+      const url = img.dataset.src + "?t=" + ts;
+      const tmp = new Image();
+      tmp.onload = function () { img.src = url; };
+      tmp.src = url;
+    });
+  }
+  updateImages();
+  setInterval(updateImages, REFRESH_MS);
+</script>
 
 </body>
 </html>
