@@ -27,17 +27,3 @@ h2{margin:2px 0 0;font-size:14px;font-style:italic;font-weight:normal;color:var(
 .status{padding:10px 16px 0;font-size:13px;color:var(--muted);text-align:center}
 @media only screen and (max-width:630px){.header-container .tpcg{order:1}.header-container .lets-netz{order:2}.header-container .ueberschrift-container{order:3;flex-basis:100%}}
 @media only screen and (max-width:460px){h1{font-size:22px}h2{font-size:12px}}
-
-/* ---------- Live-Config (Admin > Seiten-Anpassung) ---------- */
-/* Spalten: einspaltig / zweispaltig (Standard = auto = Theme-Verhalten) */
-body.cfg-cols-1 .cam-row{flex-direction:column;align-items:center}
-body.cfg-cols-1 .cam-row .cam{flex:1 1 auto;max-width:896px}
-body.cfg-cols-2 .cam-row{flex-wrap:nowrap}
-body.cfg-cols-2 .cam-row .cam{flex:1 1 0;max-width:none}
-@media only screen and (max-width:700px){body.cfg-cols-2 .cam-row{flex-wrap:wrap}body.cfg-cols-2 .cam-row .cam{flex:1 1 320px;max-width:438px}}
-/* Bildgroesse */
-body.cfg-img-small .cam img{max-width:420px;margin:0 auto}
-body.cfg-img-medium .cam img{max-width:720px;margin:0 auto}
-body.cfg-img-large .cam img{max-width:100%}
-/* Cam-Filter */
-.cam.cfg-hidden{display:none}
