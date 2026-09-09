@@ -16,6 +16,7 @@ h2{margin:2px 0 0;font-size:14px;font-style:italic;font-weight:normal;color:var(
 .btn-admin:hover{background:var(--accent-2-hover)}
 .btn-link{background:var(--link-bg);border-color:var(--link-border);min-width:0}
 .btn-link:hover{background:var(--link-hover)}
+.btn img{max-height:18px;max-width:26px;vertical-align:middle;margin-right:6px;border-radius:3px}
 .webcam{display:flex;flex-direction:column;align-items:center;gap:18px;padding:6px 16px}
 .cam{width:100%;max-width:896px;margin:0}
 .cam h3{margin:0 0 8px;text-align:center;font-size:16px;color:var(--h-color);font-family:var(--h-font)}

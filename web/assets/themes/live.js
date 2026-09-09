@@ -26,7 +26,7 @@ async function fetchWorkerStatus(statusEl) {
   } catch (e) { /* status.json ist optional */ }
 }
 
-/* Links aus der SQLite-DB (im Admin-Bereich gepflegt) */
+/* Links aus der SQLite-DB (im Admin-Bereich gepflegt), optional mit Bild */
 async function loadLinks() {
   try {
     const r = await fetch("/api/links");
@@ -40,7 +40,13 @@ async function loadLinks() {
       a.href = l.url;
       a.target = "_blank";
       a.rel = "noopener";
-      a.textContent = (l.icon ? l.icon + " " : "") + l.title;
+      if (l.image) {
+        const im = document.createElement("img");
+        im.src = l.image;
+        im.alt = "";
+        a.appendChild(im);
+      }
+      a.appendChild(document.createTextNode((l.icon ? l.icon + " " : "") + l.title));
       bar.appendChild(a);
     });
   } catch (e) { /* Links optional */ }

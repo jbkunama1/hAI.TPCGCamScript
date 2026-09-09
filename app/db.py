@@ -1,8 +1,8 @@
 """SQLite-Persistenz für hAI.TPCGCamScript.
 
 Speichert Einstellungen (Theme/Frontend-Auswahl), Benutzer, Bildpfade,
-Links und Admin-Aktionen (Audit) sessions- und container-uebergreifend
-in /data/config/tpcg.db (gemountetes Volume).
+Links (inkl. optionalem Bild) und Admin-Aktionen (Audit) sessions- und
+container-uebergreifend in /data/config/tpcg.db (gemountetes Volume).
 """
 
 import json
@@ -43,6 +43,13 @@ def _connect():
     return conn
 
 
+def _migrate_links(conn):
+    """Aeltere DBs ohne image-Spalte nachtraeglich erweitern."""
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(links)").fetchall()]
+    if cols and "image" not in cols:
+        conn.execute("ALTER TABLE links ADD COLUMN image TEXT NOT NULL DEFAULT ''")
+
+
 def init_db(admin_user="", admin_password="", admin_pass_hash="", legacy_theme_file=None):
     with _connect() as conn:
         conn.executescript(
@@ -71,6 +78,7 @@ def init_db(admin_user="", admin_password="", admin_pass_hash="", legacy_theme_f
                 title TEXT NOT NULL,
                 url TEXT NOT NULL,
                 icon TEXT NOT NULL DEFAULT '🔗',
+                image TEXT NOT NULL DEFAULT '',
                 position INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS audit (
@@ -82,6 +90,7 @@ def init_db(admin_user="", admin_password="", admin_pass_hash="", legacy_theme_f
             );
             """
         )
+        _migrate_links(conn)
 
         # Theme-Default (mit Migration einer vorhandenen theme.json)
         row = conn.execute("SELECT value FROM settings WHERE key='theme'").fetchone()
@@ -226,19 +235,19 @@ def upsert_path(key, path, label, actor=None):
 def list_links():
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT id, title, url, icon, position FROM links ORDER BY position, id"
+            "SELECT id, title, url, icon, image, position FROM links ORDER BY position, id"
         ).fetchall()
         return [dict(r) for r in rows]
 
 
-def add_link(title, url, icon="🔗", position=0, actor=None):
+def add_link(title, url, icon="🔗", image="", position=0, actor=None):
     with _connect() as conn:
         cur = conn.execute(
-            "INSERT INTO links (title, url, icon, position) VALUES (?, ?, ?, ?)",
-            (title, url, icon or "🔗", int(position or 0)),
+            "INSERT INTO links (title, url, icon, image, position) VALUES (?, ?, ?, ?, ?)",
+            (title, url, icon or "🔗", image or "", int(position or 0)),
         )
         lid = cur.lastrowid
-    add_audit("link_add", {"id": lid, "title": title, "url": url}, actor)
+    add_audit("link_add", {"id": lid, "title": title, "url": url, "image": image}, actor)
     return lid
 
 
