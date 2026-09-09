@@ -48,6 +48,54 @@
     <div class="hint" id="theme-status"></div>
   </form>
 
+  <h2>🎛️ Seiten-Anpassung (Layout & Texte)</h2>
+  <form id="config-form">
+    <table>
+      <tr>
+        <th>Spalten</th>
+        <td>
+          <select id="cfg-columns">
+            <option value="auto">Automatisch (Theme-Standard)</option>
+            <option value="1">Einspaltig</option>
+            <option value="2">Zweispaltig</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <th>Bildgröße</th>
+        <td>
+          <select id="cfg-image-size">
+            <option value="small">Klein (max. 420 px)</option>
+            <option value="medium">Mittel (max. 720 px)</option>
+            <option value="large" selected>Groß (volle Breite)</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <th>Kameras</th>
+        <td>
+          <select id="cfg-cams">
+            <option value="all">Alle (Tennis + Padel)</option>
+            <option value="tennis">Nur Tennis-Cam</option>
+            <option value="padel">Nur Padel-Cams</option>
+          </select>
+        </td>
+      </tr>
+    </table>
+    <div class="hint">Texte: leer lassen = Theme-Standard. Gilt für alle Themes gleichermaßen.</div>
+    <input type="text" id="cfg-title" placeholder="Seitentitel (z. B. 🎾 TPCG-Live)" />
+    <input type="text" id="cfg-subtitle" placeholder="Untertitel (z. B. Webcams TPC Grötzingen)" />
+    <input type="text" id="cfg-intro" placeholder="Einleitungstext über den Bildern" />
+    <input type="text" id="cfg-tennis-title" placeholder="Titel Tennis-Cam" />
+    <input type="text" id="cfg-tennis-caption" placeholder="Bildtext Tennis-Cam" />
+    <input type="text" id="cfg-padel1-title" placeholder="Titel Padel-Cam Plätze 2+3+4" />
+    <input type="text" id="cfg-padel1-caption" placeholder="Bildtext Padel-Cam Plätze 2+3+4" />
+    <input type="text" id="cfg-padel2-title" placeholder="Titel Padel-Cam Platz 1" />
+    <input type="text" id="cfg-padel2-caption" placeholder="Bildtext Padel-Cam Platz 1" />
+    <button type="submit">Anpassung speichern</button>
+    <div class="hint" id="config-status"></div>
+  </form>
+
   <h2>👥 Benutzer</h2>
   <div id="user-list">Lade…</div>
   <form id="user-form">
@@ -116,8 +164,8 @@ const THEME_LABELS = {
   "70s-dunkel": "📻 70s dunkel",
   "4k-hell": "🖥️ 4K Ultra hell",
   "4k-dunkel": "🖥️ 4K Ultra dunkel",
-  "sport-hell": "⚽ Sportlich hell",
-  "sport-dunkel": "⚽ Sportlich dunkel"
+  "sport-hell": "🎾 Sportlich hell",
+  "sport-dunkel": "🎾 Sportlich dunkel"
 };
 
 async function loadThemeOptions(current) {
@@ -196,6 +244,53 @@ document.getElementById("theme-form").addEventListener("submit", async function 
     loadAudit();
   } catch (e) {
     document.getElementById("theme-status").textContent = "❌ Fehler beim Speichern: " + e;
+  }
+});
+
+/* ---------------- Seiten-Anpassung (Live-Config) ---------------- */
+
+const CFG_TEXT_KEYS = ["title", "subtitle", "intro", "tennis_title", "tennis_caption", "padel1_title", "padel1_caption", "padel2_title", "padel2_caption"];
+
+async function loadLiveConfig() {
+  try {
+    const r = await fetch("/api/live-config");
+    const cfg = await r.json();
+    document.getElementById("cfg-columns").value = cfg.columns || "auto";
+    document.getElementById("cfg-image-size").value = cfg.image_size || "large";
+    document.getElementById("cfg-cams").value = cfg.cams || "all";
+    const texts = cfg.texts || {};
+    CFG_TEXT_KEYS.forEach(function (k) {
+      document.getElementById("cfg-" + k.replace(/_/g, "-")).value = texts[k] || "";
+    });
+  } catch (e) {
+    document.getElementById("config-status").textContent = "Fehler beim Laden: " + e;
+  }
+}
+
+document.getElementById("config-form").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  const texts = {};
+  CFG_TEXT_KEYS.forEach(function (k) {
+    texts[k] = document.getElementById("cfg-" + k.replace(/_/g, "-")).value;
+  });
+  try {
+    const r = await fetch("/api/live-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        columns: document.getElementById("cfg-columns").value,
+        image_size: document.getElementById("cfg-image-size").value,
+        cams: document.getElementById("cfg-cams").value,
+        texts: texts
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+    document.getElementById("config-status").textContent =
+      "✅ Anpassung gespeichert – persistent in der SQLite-DB, unter /live sofort aktiv.";
+    loadAudit();
+  } catch (e) {
+    document.getElementById("config-status").textContent = "❌ Fehler beim Speichern: " + e;
   }
 });
 
@@ -381,6 +476,7 @@ initLogs();
 loadUsers();
 loadPaths();
 loadLinksAdmin();
+loadLiveConfig();
 loadAudit();
 </script>
 

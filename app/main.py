@@ -387,6 +387,91 @@ def set_theme():
     logger.info("Theme geaendert: %s (durch %s)", theme, _actor())
     return jsonify({"theme": theme})
 
+# ----------------- API: Live-Config (Layout & Texte der Live-Seite) -----------------
+
+DEFAULT_LIVE_CONFIG = {
+    "columns": "auto",        # auto | 1 | 2
+    "image_size": "large",    # small | medium | large (large = volle Breite, bisheriges Verhalten)
+    "cams": "all",            # all | tennis | padel
+    "texts": {
+        "title": "",
+        "subtitle": "",
+        "intro": "",
+        "tennis_title": "",
+        "tennis_caption": "",
+        "padel1_title": "",
+        "padel1_caption": "",
+        "padel2_title": "",
+        "padel2_caption": "",
+    },
+}
+
+LIVE_CONFIG_COLUMNS = {"auto", "1", "2"}
+LIVE_CONFIG_SIZES = {"small", "medium", "large"}
+LIVE_CONFIG_CAMS = {"all", "tennis", "padel"}
+
+
+def get_live_config():
+    """Gespeicherte Live-Config mit Defaults zusammenfuehren."""
+    cfg = json.loads(json.dumps(DEFAULT_LIVE_CONFIG))  # Deep-Copy
+    raw = db.get_setting("live_config", None)
+    if raw:
+        try:
+            stored = json.loads(raw)
+            for key in ("columns", "image_size", "cams"):
+                if stored.get(key):
+                    cfg[key] = stored[key]
+            if isinstance(stored.get("texts"), dict):
+                for k in cfg["texts"]:
+                    if k in stored["texts"]:
+                        cfg["texts"][k] = stored["texts"][k]
+        except (ValueError, TypeError):
+            logger.warning("Ungueltige live_config in DB, verwende Defaults")
+    return cfg
+
+
+def validate_live_config(body):
+    columns = str(body.get("columns", "auto"))
+    image_size = str(body.get("image_size", "large"))
+    cams = str(body.get("cams", "all"))
+    if columns not in LIVE_CONFIG_COLUMNS:
+        return None, "columns ungueltig (auto|1|2)"
+    if image_size not in LIVE_CONFIG_SIZES:
+        return None, "image_size ungueltig (small|medium|large)"
+    if cams not in LIVE_CONFIG_CAMS:
+        return None, "cams ungueltig (all|tennis|padel)"
+    texts_in = body.get("texts") or {}
+    if not isinstance(texts_in, dict):
+        return None, "texts muss ein Objekt sein"
+    texts = {}
+    for key in DEFAULT_LIVE_CONFIG["texts"]:
+        texts[key] = str(texts_in.get(key, "")).strip()[:200]
+    return {
+        "columns": columns,
+        "image_size": image_size,
+        "cams": cams,
+        "texts": texts,
+    }, None
+
+
+@app.get("/api/live-config")
+def api_get_live_config():
+    # Oeffentlich lesbar: die Live-Seite laedt die Config ohne Auth
+    return jsonify(get_live_config())
+
+
+@app.post("/api/live-config")
+@require_auth
+def api_set_live_config():
+    body = request.get_json(silent=True) or {}
+    cfg, err = validate_live_config(body)
+    if err:
+        return jsonify({"error": err}), 400
+    db.set_setting("live_config", json.dumps(cfg, ensure_ascii=False), actor=_actor())
+    write_audit_log("live_config_change", cfg)
+    logger.info("Live-Config geaendert (durch %s)", _actor())
+    return jsonify(cfg)
+
 # ----------------- API: Bildpfade (DB) -----------------
 
 @app.get("/api/image-path")
