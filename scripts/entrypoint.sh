@@ -42,6 +42,19 @@ if id "$SFTP_USER" &>/dev/null; then
 fi
 log "Upload-Ziele vorbereitet: /data/input/tennis + /data/input/padel (beschreibbar fuer ${SFTP_USER:-<unset>})"
 
+# Passive FTP-Adresse fuer externe Clients (Router-Portweiterleitung)
+if [ -n "$PASV_ADDRESS" ]; then
+  sed -i "s/^pasv_address=.*/pasv_address=${PASV_ADDRESS}/" /etc/vsftpd/vsftpd.conf
+  log "PASV_ADDRESS gesetzt: $PASV_ADDRESS"
+fi
+
+# Optionaler Klartext-Fallback (nur falls die Kamera kein explizites FTPS kann)
+if [ "${FTP_ALLOW_PLAIN:-false}" = "true" ]; then
+  sed -i "s/^force_local_logins_ssl=.*/force_local_logins_ssl=NO/" /etc/vsftpd/vsftpd.conf
+  sed -i "s/^force_local_data_ssl=.*/force_local_data_ssl=NO/" /etc/vsftpd/vsftpd.conf
+  log "WARNUNG: Klartext-FTP erlaubt (FTP_ALLOW_PLAIN=true) - nur fuer Kameras ohne explizites FTPS"
+fi
+
 # SSH/SFTP starten (Log direkt in Datei, da kein Syslog im Container laeuft)
 /usr/sbin/sshd -E /data/logs/sshd.log
 log "SFTP/SSH-Server gestartet (Port 22, Chroot: /data/input, Log: sshd.log)"

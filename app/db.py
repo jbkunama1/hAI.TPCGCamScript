@@ -1,8 +1,9 @@
 """SQLite-Persistenz für hAI.TPCGCamScript.
 
 Speichert Einstellungen (Theme/Frontend-Auswahl), Benutzer, Bildpfade,
-Links (inkl. optionalem Bild) und Admin-Aktionen (Audit) sessions- und
-container-uebergreifend in /data/config/tpcg.db (gemountetes Volume).
+Links (inkl. optionalem Bild), Kameras (UID/IP/Name/Einsatzort/Ports/aktiv)
+und Admin-Aktionen (Audit) sessions- und container-uebergreifend
+in /data/config/tpcg.db (gemountetes Volume).
 """
 
 import json
@@ -80,6 +81,17 @@ def init_db(admin_user="", admin_password="", admin_pass_hash="", legacy_theme_f
                 icon TEXT NOT NULL DEFAULT '🔗',
                 image TEXT NOT NULL DEFAULT '',
                 position INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS cameras (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uid TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                ip TEXT NOT NULL DEFAULT '',
+                location TEXT NOT NULL DEFAULT '',
+                ports TEXT NOT NULL DEFAULT '',
+                active INTEGER NOT NULL DEFAULT 1,
+                note TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS audit (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -258,6 +270,47 @@ def delete_link(link_id, actor=None):
             return False
         conn.execute("DELETE FROM links WHERE id=?", (link_id,))
     add_audit("link_delete", {"id": link_id, "title": row["title"]}, actor)
+    return True
+
+
+# ----------------- Kameras -----------------
+
+def list_cameras():
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT id, uid, name, ip, location, ports, active, note, created_at FROM cameras ORDER BY name"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def add_camera(uid, name, ip="", location="", ports="", active=True, note="", actor=None):
+    with _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO cameras (uid, name, ip, location, ports, active, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (uid, name, ip, location, ports, 1 if active else 0, note, _now()),
+        )
+        cid = cur.lastrowid
+    add_audit("camera_add", {"id": cid, "uid": uid, "name": name}, actor)
+    return cid
+
+
+def set_camera_active(cam_id, active, actor=None):
+    with _connect() as conn:
+        row = conn.execute("SELECT name FROM cameras WHERE id=?", (cam_id,)).fetchone()
+        if not row:
+            return False
+        conn.execute("UPDATE cameras SET active=? WHERE id=?", (1 if active else 0, cam_id))
+    add_audit("camera_active", {"id": cam_id, "active": bool(active)}, actor)
+    return True
+
+
+def delete_camera(cam_id, actor=None):
+    with _connect() as conn:
+        row = conn.execute("SELECT name FROM cameras WHERE id=?", (cam_id,)).fetchone()
+        if not row:
+            return False
+        conn.execute("DELETE FROM cameras WHERE id=?", (cam_id,))
+    add_audit("camera_delete", {"id": cam_id, "name": row["name"]}, actor)
     return True
 
 
