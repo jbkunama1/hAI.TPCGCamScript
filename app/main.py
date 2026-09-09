@@ -11,7 +11,7 @@ from werkzeug.security import check_password_hash
 
 from app import db
 
-APP_VERSION = os.getenv("APP_VERSION", "1.3.1")
+APP_VERSION = os.getenv("APP_VERSION", "1.4.0")
 
 app = Flask(__name__)
 
@@ -360,6 +360,7 @@ def api_info():
                 "users": len(db.list_users()),
                 "paths": len(db.list_paths()),
                 "links": len(db.list_links()),
+                "cameras": len(db.list_cameras()),
             },
             "env": env,
         }
@@ -454,6 +455,58 @@ def api_delete_link(link_id):
     if not ok:
         return jsonify({"error": "Link nicht gefunden"}), 404
     return jsonify({"status": "deleted", "id": link_id})
+
+# ----------------- API: Kameras (DB) -----------------
+
+@app.get("/api/cameras")
+@require_auth
+def api_list_cameras():
+    return jsonify({"cameras": db.list_cameras()})
+
+
+@app.post("/api/cameras")
+@require_auth
+def api_add_camera():
+    body = request.get_json(silent=True) or {}
+    uid = (body.get("uid") or "").strip()
+    name = (body.get("name") or "").strip()
+    if not uid or not name:
+        return jsonify({"error": "UID und Name sind Pflicht"}), 400
+    try:
+        cid = db.add_camera(
+            uid=uid,
+            name=name,
+            ip=(body.get("ip") or "").strip(),
+            location=(body.get("location") or "").strip(),
+            ports=(body.get("ports") or "").strip(),
+            active=bool(body.get("active", True)),
+            note=(body.get("note") or "").strip(),
+            actor=_actor(),
+        )
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Kamera mit dieser UID existiert bereits"}), 409
+    logger.info("Kamera angelegt: %s (%s) (durch %s)", name, uid, _actor())
+    return jsonify({"status": "created", "id": cid})
+
+
+@app.post("/api/cameras/<int:cam_id>/active")
+@require_auth
+def api_toggle_camera(cam_id):
+    body = request.get_json(silent=True) or {}
+    ok = db.set_camera_active(cam_id, bool(body.get("active")), actor=_actor())
+    if not ok:
+        return jsonify({"error": "Kamera nicht gefunden"}), 404
+    return jsonify({"status": "updated", "id": cam_id, "active": bool(body.get("active"))})
+
+
+@app.delete("/api/cameras/<int:cam_id>")
+@require_auth
+def api_delete_camera(cam_id):
+    ok = db.delete_camera(cam_id, actor=_actor())
+    if not ok:
+        return jsonify({"error": "Kamera nicht gefunden"}), 404
+    logger.info("Kamera geloescht: id=%s (durch %s)", cam_id, _actor())
+    return jsonify({"status": "deleted", "id": cam_id})
 
 # ----------------- API: Benutzer (DB) -----------------
 
@@ -622,11 +675,12 @@ def log_startup():
     logger.info("hAI.TPCGCamScript v%s - Flask-App initialisiert", APP_VERSION)
     logger.info("DATA_DIR=%s | WEB_DIR=%s", DATA_DIR, WEB_DIR)
     logger.info(
-        "SQLite-DB: %s | Benutzer=%d Pfade=%d Links=%d | Theme=%s",
+        "SQLite-DB: %s | Benutzer=%d Pfade=%d Links=%d Kameras=%d | Theme=%s",
         db.DB_PATH,
         len(db.list_users()),
         len(db.list_paths()),
         len(db.list_links()),
+        len(db.list_cameras()),
         get_active_theme(),
     )
     logger.info("Themes verfuegbar: %s", ", ".join(available_themes()))

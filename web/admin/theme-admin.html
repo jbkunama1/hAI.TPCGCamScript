@@ -24,6 +24,8 @@
     td, th { border: 1px solid #e5e7eb; padding: 0.35rem 0.5rem; text-align: left; vertical-align: top; }
     textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.85rem; }
     input[type="text"], input[type="password"] { width: 100%; box-sizing: border-box; padding: 0.3rem; margin-bottom: 0.4rem; }
+    input[type="checkbox"] { width: auto; margin: 0.3rem 0; }
+    .checkbox-row { font-size: 0.9rem; margin-bottom: 0.4rem; }
     select { padding: 0.3rem; font-size: 0.9rem; max-width: 100%; }
     pre { background: #111827; color: #d1fae5; padding: 0.75rem; border-radius: 0.5rem; max-height: 320px; overflow: auto; font-size: 0.78rem; white-space: pre-wrap; }
     img.link-thumb { max-height: 22px; max-width: 34px; border-radius: 3px; vertical-align: middle; }
@@ -56,6 +58,20 @@
     <input type="password" id="user-pass" placeholder="Passwort (mind. 6 Zeichen)" required />
     <button type="submit">Benutzer anlegen</button>
     <div class="hint" id="user-status"></div>
+  </form>
+
+  <h2>📹 Kameras</h2>
+  <div id="camera-list">Lade…</div>
+  <form id="camera-form">
+    <input type="text" id="cam-uid" placeholder="UID (aus der Reolink-App)" required />
+    <input type="text" id="cam-name" placeholder="Name, z. B. Tennis Eingang" required />
+    <input type="text" id="cam-ip" placeholder="IP (optional), z. B. 192.168.178.60" />
+    <input type="text" id="cam-location" placeholder="Einsatzort, z. B. Clubheim / Platz 4+5" />
+    <input type="text" id="cam-ports" placeholder="Offene Ports, z. B. 80, 443, 554, 8000" />
+    <label class="checkbox-row"><input type="checkbox" id="cam-active" checked /> aktiv</label>
+    <input type="text" id="cam-note" placeholder="Notiz (optional)" />
+    <button type="submit">Kamera hinzufügen</button>
+    <div class="hint" id="camera-status"></div>
   </form>
 
   <h2>🗂️ Bildpfade</h2>
@@ -148,7 +164,7 @@ async function fetchInfo() {
     html += "<tr><th>Aktives Theme</th><td>" + d.theme + " (" + (d.themes_available || []).length + " verfügbar)</td></tr>";
     if (d.database) {
       html += "<tr><th>SQLite-DB</th><td>" + d.database.path + "<br>👥 " + d.database.users +
-        " Benutzer · 🗂️ " + d.database.paths + " Pfade · 🔗 " + d.database.links + " Links</td></tr>";
+        " Benutzer · 🗂️ " + d.database.paths + " Pfade · 🔗 " + d.database.links + " Links · 📹 " + (d.database.cameras || 0) + " Kameras</td></tr>";
     }
     html += "<tr><th>Ports</th><td>🌐 HTTP " + d.ports.http.extern + " → " + d.ports.http.intern +
       "<br>📁 FTP " + d.ports.ftp.extern +
@@ -242,6 +258,62 @@ document.getElementById("user-form").addEventListener("submit", async function (
   document.getElementById("user-status").textContent = r.ok
     ? "✅ Benutzer angelegt (ID " + d.id + ")" : "❌ " + (d.error || r.status);
   if (r.ok) { ev.target.reset(); loadUsers(); loadAudit(); }
+});
+
+/* ---------------- Kameras ---------------- */
+
+async function loadCameras() {
+  const box = document.getElementById("camera-list");
+  try {
+    const r = await fetch("/api/cameras");
+    const d = await r.json();
+    let html = "<table><tr><th>Aktiv</th><th>UID</th><th>Name</th><th>IP</th><th>Einsatzort</th><th>Offene Ports</th><th></th></tr>";
+    (d.cameras || []).forEach(function (c) {
+      html += "<tr><td><input type='checkbox' " + (c.active ? "checked " : "") + "onchange='toggleCamera(" + c.id + ", this.checked)' /></td>" +
+        "<td>" + c.uid + "</td><td>" + c.name + "</td><td>" + (c.ip || "–") + "</td><td>" + (c.location || "–") + "</td><td>" + (c.ports || "–") + "</td>" +
+        "<td><button type='button' class='danger' onclick='deleteCamera(" + c.id + ")'>🗑️</button></td></tr>";
+    });
+    box.innerHTML = html + "</table>";
+  } catch (e) { box.textContent = "Fehler: " + e; }
+}
+
+async function toggleCamera(id, active) {
+  const r = await fetch("/api/cameras/" + id + "/active", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ active: active })
+  });
+  if (!r.ok) document.getElementById("camera-status").textContent = "❌ Fehler beim Umschalten";
+  loadAudit();
+}
+
+async function deleteCamera(id) {
+  if (!confirm("Kamera #" + id + " wirklich löschen?")) return;
+  const r = await fetch("/api/cameras/" + id, { method: "DELETE" });
+  document.getElementById("camera-status").textContent = r.ok ? "✅ Kamera gelöscht" : "❌ Fehler beim Löschen";
+  loadCameras();
+  loadAudit();
+}
+
+document.getElementById("camera-form").addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  const r = await fetch("/api/cameras", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      uid: document.getElementById("cam-uid").value,
+      name: document.getElementById("cam-name").value,
+      ip: document.getElementById("cam-ip").value,
+      location: document.getElementById("cam-location").value,
+      ports: document.getElementById("cam-ports").value,
+      active: document.getElementById("cam-active").checked,
+      note: document.getElementById("cam-note").value
+    })
+  });
+  const d = await r.json();
+  document.getElementById("camera-status").textContent = r.ok
+    ? "✅ Kamera angelegt (ID " + d.id + ")" : "❌ " + (d.error || r.status);
+  if (r.ok) { ev.target.reset(); document.getElementById("cam-active").checked = true; loadCameras(); loadAudit(); }
 });
 
 /* ---------------- Pfade ---------------- */
@@ -415,6 +487,7 @@ fetchInfo();
 fetchImagePath();
 initLogs();
 loadUsers();
+loadCameras();
 loadPaths();
 loadLinksAdmin();
 loadScripts();

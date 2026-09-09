@@ -34,13 +34,34 @@ else
   log "WARNUNG: SFTP_USER/SFTP_PASSWORD nicht gesetzt - kein FTP-User angelegt"
 fi
 
+# Upload-Unterordner vorbereiten: /data/input bleibt root:root (sshd-Chroot),
+# die Unterordner gehoeren dem Transfer-User, damit die Kameras schreiben koennen
+mkdir -p /data/input/tennis /data/input/padel
+if id "$SFTP_USER" &>/dev/null; then
+  chown -R "$SFTP_USER":"$SFTP_USER" /data/input/tennis /data/input/padel || true
+fi
+log "Upload-Ziele vorbereitet: /data/input/tennis + /data/input/padel (beschreibbar fuer ${SFTP_USER:-<unset>})"
+
+# Passive FTP-Adresse fuer externe Clients (Router-Portweiterleitung)
+if [ -n "$PASV_ADDRESS" ]; then
+  sed -i "s/^pasv_address=.*/pasv_address=${PASV_ADDRESS}/" /etc/vsftpd/vsftpd.conf
+  log "PASV_ADDRESS gesetzt: $PASV_ADDRESS"
+fi
+
+# Optionaler Klartext-Fallback (nur falls die Kamera kein explizites FTPS kann)
+if [ "${FTP_ALLOW_PLAIN:-false}" = "true" ]; then
+  sed -i "s/^force_local_logins_ssl=.*/force_local_logins_ssl=NO/" /etc/vsftpd/vsftpd.conf
+  sed -i "s/^force_local_data_ssl=.*/force_local_data_ssl=NO/" /etc/vsftpd/vsftpd.conf
+  log "WARNUNG: Klartext-FTP erlaubt (FTP_ALLOW_PLAIN=true) - nur fuer Kameras ohne explizites FTPS"
+fi
+
 # SSH/SFTP starten (Log direkt in Datei, da kein Syslog im Container laeuft)
 /usr/sbin/sshd -E /data/logs/sshd.log
-log "SFTP/SSH-Server gestartet (Port 22, Log: sshd.log)"
+log "SFTP/SSH-Server gestartet (Port 22, Chroot: /data/input, Log: sshd.log)"
 
 # vsftpd starten
 /usr/sbin/vsftpd /etc/vsftpd/vsftpd.conf &
-log "FTP/FTPS-Server gestartet (Ports 21 + 990, Logs: vsftpd.log / vsftpd-xfer.log)"
+log "FTP/FTPS-Server gestartet (Ports 21 + 990, Upload-Ziel: /data/input, Logs: vsftpd.log / vsftpd-xfer.log)"
 
 # Worker im Hintergrund starten
 export PROCESS_INTERVAL_SECONDS="${PROCESS_INTERVAL_SECONDS:-30}"
