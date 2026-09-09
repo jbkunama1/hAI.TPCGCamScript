@@ -11,7 +11,7 @@ from werkzeug.security import check_password_hash
 
 from app import db
 
-APP_VERSION = os.getenv("APP_VERSION", "1.3.0")
+APP_VERSION = os.getenv("APP_VERSION", "1.4.0")
 
 app = Flask(__name__)
 
@@ -520,10 +520,13 @@ def api_add_link():
     body = request.get_json(silent=True) or {}
     title = (body.get("title") or "").strip()
     url = (body.get("url") or "").strip()
+    image = (body.get("image") or "").strip()
     if not title or not url.startswith(("http://", "https://")):
         return jsonify({"error": "Titel fehlt oder URL ungueltig"}), 400
+    if image and not image.startswith(("http://", "https://", "/")):
+        return jsonify({"error": "Bild-URL ungueltig (http(s):// oder /…)"}), 400
     lid = db.add_link(
-        title, url, body.get("icon") or "🔗", body.get("position") or 0, actor=_actor()
+        title, url, body.get("icon") or "🔗", image, body.get("position") or 0, actor=_actor()
     )
     logger.info("Link angelegt: %s -> %s (durch %s)", title, url, _actor())
     return jsonify({"status": "created", "id": lid})

@@ -13,7 +13,7 @@
 [![Portainer](https://img.shields.io/badge/Portainer-ready-13BEF9?style=for-the-badge&logo=portainer&logoColor=white)](https://www.portainer.io/)
 [![License](https://img.shields.io/github/license/jbkunama1/hAI.TPCGCamScript?style=for-the-badge&color=F59E0B)](LICENSE)
 
-**Containerisierte Verarbeitung, sichere Übertragung und Live-Vorschau für die TPC Grün-Gold Grötzingen Tennis- und Padelkameras.**
+**Containerisierte Verarbeitung, sichere Übertragung und Live-Vorschau für die TPC Grötzingen Tennis- und Padelkameras.**
 
 </div>
 
@@ -121,7 +121,7 @@ docker network create highfishNetwork   # nur falls noch nicht vorhanden
 > Die vier Secret-Werte dürfen nicht als beschreibende Platzhalter gespeichert werden. Verwende für jeden Wert ein eigenes, langes Zufallsgeheimnis.
 
 | Variable | Pflicht | Zweck |
-|---|:---:|---|
+|---|:---:|:---|
 | `ADMIN_PASSWORD` | ✅ | Passwort für die Basic-Auth-Verwaltung |
 | `API_KEY` | ✅ | Zugriffsschlüssel für die REST-API |
 | `SFTP_PASSWORD` | ✅ | Passwort des Transfernutzers |
@@ -251,6 +251,6 @@ curl -u "admin:DEIN_ADMIN_PASSWORT" http://SERVER-IP:8067/api/status
 
 <div align="center">
 
-🎾 **TPC Grün-Gold Grötzingen** · gebaut mit 🐍 Python, 🐳 Docker und ❤️
+🎾 **TPC Grötzingen** · gebaut mit 🐍 Python, 🐳 Docker und ❤️
 
 </div>

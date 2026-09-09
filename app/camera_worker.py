@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import re
 import sys
 import time
 from datetime import datetime
@@ -22,6 +23,13 @@ TENNIS_TARGET_SIZE = (896, 672)
 TENNIS_CROP_SIZE = (896, 504)
 PADEL_TARGET_SIZE = (896, 504)
 
+# Routine-Log nur alle N Sekunden (Erfolg/Fehler wird sofort geloggt)
+WORKER_LOG_INTERVAL = int(os.getenv("WORKER_LOG_INTERVAL_SECONDS", "120"))
+# Log-Zeilen aelter als N Stunden werden entfernt
+LOG_RETENTION_HOURS = int(os.getenv("LOG_RETENTION_HOURS", "48"))
+LOG_MAX_BYTES = int(os.getenv("LOG_MAX_BYTES", str(5 * 1024 * 1024)))
+LOG_KEEP_LINES = 5000
+
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 logger = logging.getLogger("tpcg-worker")
@@ -34,6 +42,49 @@ if not logger.handlers:
     _sh = logging.StreamHandler(sys.stdout)
     _sh.setFormatter(_formatter)
     logger.addHandler(_sh)
+
+_last_summary_log = 0.0
+_last_cleanup = 0.0
+
+_TS_RE = re.compile(r"^\[?(\d{4}-\d{2}-\d{2})[ ,T](\d{2}:\d{2}:\d{2})")
+
+
+def _line_ts(line):
+    m = _TS_RE.match(line)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1) + " " + m.group(2), "%Y-%m-%d %H:%M:%S").timestamp()
+    except ValueError:
+        return None
+
+
+def cleanup_logs():
+    """Entfernt Log-Zeilen aelter als LOG_RETENTION_HOURS und begrenzt Dateigroesse."""
+    cutoff = time.time() - LOG_RETENTION_HOURS * 3600
+    for f in sorted(LOGS_DIR.glob("*.log")):
+        try:
+            if f.stat().st_size > LOG_MAX_BYTES:
+                lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+                f.write_text("\n".join(lines[-LOG_KEEP_LINES:]) + "\n", encoding="utf-8")
+                logger.info("Log gekuerzt (> %d Bytes): %s auf letzte %d Zeilen", LOG_MAX_BYTES, f.name, LOG_KEEP_LINES)
+                continue
+            lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+            if not lines:
+                continue
+            kept = []
+            removed = 0
+            for ln in lines:
+                ts = _line_ts(ln)
+                if ts is not None and ts < cutoff:
+                    removed += 1
+                else:
+                    kept.append(ln)
+            if removed:
+                f.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+                logger.info("Log bereinigt: %s (%d Zeilen aelter als %dh entfernt)", f.name, removed, LOG_RETENTION_HOURS)
+        except Exception as e:
+            logger.warning("Log-Cleanup fuer %s fehlgeschlagen: %r", f.name, e)
 
 
 def _ensure_dirs():
@@ -67,16 +118,11 @@ def process_tennis():
 
     try:
         with Image.open(src_file) as img:
-            # Resize auf 896x672
             resized = img.resize(TENNIS_TARGET_SIZE, Image.LANCZOS)
-
-            # Crop auf 896x504 (oberer Teil)
             cropped = resized.crop((0, 0, TENNIS_CROP_SIZE[0], TENNIS_CROP_SIZE[1]))
-
             dst_dir.mkdir(parents=True, exist_ok=True)
             cropped.save(dst_file, format="JPEG", quality=50, optimize=True)
 
-        # Originalaufnahme loeschen wie in PHP
         src_file.unlink(missing_ok=True)
 
         logger.info("Tennis: %s -> %s (%d Bytes Quelle)", src_file.name, dst_file, size)
@@ -88,28 +134,19 @@ def process_tennis():
 
 
 def _collect_padel_candidates(today_dir: Path):
-    """
-    Sucht im heutigen Padel-Ordner nach gueltigen Dateien und trennt sie
-    in Arrays fuer Padel_00 und Padel_01, wie in der PHP-Implementierung.
-    """
     if not today_dir.is_dir():
         return [], []
 
     padel_00 = []
     padel_01 = []
 
-    # Absteigend sortiert, damit der aktuellste Zeitstempel zuerst kommt
     for entry in sorted(today_dir.iterdir(), key=lambda p: p.name, reverse=True):
         if not entry.is_file():
             continue
-
-        # Mindestgroesse pruefen (Upload beginnt mit 0 Bytes)
         if entry.stat().st_size <= PADEL_MIN_SIZE:
             continue
-
         name = entry.name
-        prefix = name[:8]  # "Padel_00" oder "Padel_01"
-
+        prefix = name[:8]
         if prefix == "Padel_00":
             padel_00.append(entry)
         elif prefix == "Padel_01":
@@ -119,10 +156,6 @@ def _collect_padel_candidates(today_dir: Path):
 
 
 def process_padel():
-    """
-    Verarbeitet die neuesten Dateien Padel_00_* / Padel_01_* im heutigen
-    Ordner zu /data/output/padel/webcam1_live.jpg und webcam2_live.jpg.
-    """
     _ensure_dirs()
     padel_root = INPUT_DIR / "padel"
     today_dir = padel_root / datetime.now().strftime("%Y/%m/%d")
@@ -140,21 +173,15 @@ def process_padel():
 
     try:
         dst_dir.mkdir(parents=True, exist_ok=True)
-
         with Image.open(src1) as img1:
             resized1 = img1.resize(PADEL_TARGET_SIZE, Image.LANCZOS)
             resized1.save(dst1, format="JPEG", quality=50, optimize=True)
-
         with Image.open(src2) as img2:
             resized2 = img2.resize(PADEL_TARGET_SIZE, Image.LANCZOS)
             resized2.save(dst2, format="JPEG", quality=50, optimize=True)
 
         logger.info("Padel: %s + %s -> %s, %s", src1.name, src2.name, dst1, dst2)
-        return {
-            "processed": True,
-            "output1": str(dst1),
-            "output2": str(dst2),
-        }
+        return {"processed": True, "output1": str(dst1), "output2": str(dst2)}
 
     except Exception as e:
         logger.exception("Padel-Verarbeitung fehlgeschlagen: %r", e)
@@ -162,9 +189,6 @@ def process_padel():
 
 
 def write_status(last_tennis, last_padel):
-    """
-    Schreibt /data/output/status.json mit Zeitstempel und einfachem Status.
-    """
     _ensure_dirs()
     status = {
         "last_run": datetime.now().isoformat(timespec="seconds"),
@@ -180,30 +204,47 @@ def _fmt(res):
 
 
 def run_once():
+    global _last_summary_log
     _ensure_dirs()
     tennis_result = process_tennis()
     padel_result = process_padel()
     write_status(tennis_result, padel_result)
-    logger.info(
-        "Verarbeitungslauf: tennis=%s | padel=%s",
-        _fmt(tennis_result),
-        _fmt(padel_result),
-    )
+
+    # Routine-Zeile nur alle WORKER_LOG_INTERVAL Sekunden; Erfolg/Fehler sofort
+    now = time.time()
+    has_output = tennis_result.get("processed") or padel_result.get("processed")
+    has_error = _fmt(tennis_result).startswith("error_") or _fmt(padel_result).startswith("error_")
+    if has_output or has_error or (now - _last_summary_log >= WORKER_LOG_INTERVAL):
+        logger.info(
+            "Verarbeitungslauf: tennis=%s | padel=%s",
+            _fmt(tennis_result),
+            _fmt(padel_result),
+        )
+        _last_summary_log = now
     return tennis_result, padel_result
 
 
 def start_worker(interval_seconds: int = 30):
-    """
-    Endlos-Worker, der alle `interval_seconds` die Bilder aktualisiert.
-    """
+    """Endlos-Worker: Bilder aktualisieren + stuendliches Log-Cleanup."""
+    global _last_cleanup
     _ensure_dirs()
     logger.info(
         "Camera-Worker gestartet: Intervall=%ss | Input=%s | Output=%s",
         interval_seconds, INPUT_DIR, OUTPUT_DIR,
     )
+    logger.info(
+        "Log-Policy: Routine-Zeile alle %ds | Aufbewahrung %dh | max %d Bytes",
+        WORKER_LOG_INTERVAL, LOG_RETENTION_HOURS, LOG_MAX_BYTES,
+    )
+    cleanup_logs()
+    _last_cleanup = time.time()
     while True:
         try:
             run_once()
+            now = time.time()
+            if now - _last_cleanup >= 3600:
+                cleanup_logs()
+                _last_cleanup = now
         except Exception as e:
             logger.exception("Fehler im Worker-Lauf: %r", e)
             LOGS_DIR.mkdir(parents=True, exist_ok=True)

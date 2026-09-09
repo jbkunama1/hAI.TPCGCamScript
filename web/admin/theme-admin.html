@@ -24,7 +24,8 @@
     td, th { border: 1px solid #e5e7eb; padding: 0.35rem 0.5rem; text-align: left; vertical-align: top; }
     textarea { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 0.85rem; }
     input[type="text"], input[type="password"] { width: 100%; box-sizing: border-box; padding: 0.3rem; margin-bottom: 0.4rem; }
-    select { padding: 0.3rem; font-size: 0.9rem; }
+    select { padding: 0.3rem; font-size: 0.9rem; max-width: 100%; }
+    img.link-thumb { max-height: 22px; max-width: 34px; border-radius: 3px; vertical-align: middle; }
     pre { background: #111827; color: #d1fae5; padding: 0.75rem; border-radius: 0.5rem; max-height: 320px; overflow: auto; font-size: 0.78rem; white-space: pre-wrap; }
   </style>
 </head>
@@ -121,6 +122,7 @@
     <input type="text" id="link-title" placeholder="Titel" required />
     <input type="text" id="link-url" placeholder="https://…" required />
     <input type="text" id="link-icon" placeholder="Icon (Emoji, optional)" />
+    <input type="text" id="link-image" placeholder="Bild-URL (optional, z. B. /assets/tpc_logo_75px.jpg)" />
     <button type="submit">Link hinzufügen</button>
     <div class="hint" id="link-status"></div>
   </form>
@@ -129,11 +131,12 @@
   <div id="image-path">Lade…</div>
 
   <h2>🐍 Skript bearbeiten</h2>
+  <select id="script-select"><option value="">– vorhandenes Skript wählen… –</option></select>
   <form id="script-form">
-    <input type="text" id="script-name" name="name" placeholder="Skriptname, z. B. process_single.py" required />
+    <input type="text" id="script-name" name="name" placeholder="Skriptname (aus Liste oder frei eingeben)" required />
     <textarea id="script-code" name="code" rows="10" required></textarea>
     <button type="submit">Skript speichern</button>
-    <div class="hint" id="script-status"></div>
+    <div class="hint" id="script-status">Auswahl aus der Dropdown-Liste lädt den Code automatisch. Freitext ist weiterhin möglich.</div>
   </form>
 
   <h2>🧾 Audit (letzte Admin-Aktionen)</h2>
@@ -374,9 +377,10 @@ async function loadLinksAdmin() {
   try {
     const r = await fetch("/api/links");
     const d = await r.json();
-    let html = "<table><tr><th>Icon</th><th>Titel</th><th>URL</th><th></th></tr>";
+    let html = "<table><tr><th>Bild</th><th>Icon</th><th>Titel</th><th>URL</th><th></th></tr>";
     (d.links || []).forEach(function (l) {
-      html += "<tr><td>" + l.icon + "</td><td>" + l.title + "</td><td><a href='" + l.url + "' target='_blank'>" + l.url + "</a>" +
+      const img = l.image ? "<img class='link-thumb' src='" + l.image + "' alt='' />" : "–";
+      html += "<tr><td>" + img + "</td><td>" + l.icon + "</td><td>" + l.title + "</td><td><a href='" + l.url + "' target='_blank'>" + l.url + "</a>" +
         "</td><td><button type='button' class='danger' onclick='deleteLink(" + l.id + ")'>🗑️</button></td></tr>";
     });
     box.innerHTML = html + "</table>";
@@ -398,7 +402,8 @@ document.getElementById("link-form").addEventListener("submit", async function (
     body: JSON.stringify({
       title: document.getElementById("link-title").value,
       url: document.getElementById("link-url").value,
-      icon: document.getElementById("link-icon").value
+      icon: document.getElementById("link-icon").value,
+      image: document.getElementById("link-image").value
     })
   });
   const d = await r.json();
@@ -406,7 +411,37 @@ document.getElementById("link-form").addEventListener("submit", async function (
   if (r.ok) { ev.target.reset(); loadLinksAdmin(); loadAudit(); }
 });
 
-/* ---------------- Skripte ---------------- */
+/* ---------------- Skripte (Dropdown + Editor) ---------------- */
+
+async function loadScripts() {
+  const sel = document.getElementById("script-select");
+  try {
+    const r = await fetch("/api/scripts");
+    const d = await r.json();
+    sel.innerHTML = '<option value="">– vorhandenes Skript wählen… –</option>';
+    (d.scripts || []).forEach(function (s) {
+      const o = document.createElement("option");
+      o.value = s.name;
+      o.textContent = s.name + " (" + s.size + " B)";
+      sel.appendChild(o);
+    });
+  } catch (e) { /* Liste optional */ }
+}
+
+document.getElementById("script-select").addEventListener("change", async function () {
+  const name = this.value;
+  if (!name) return;
+  document.getElementById("script-name").value = name;
+  try {
+    const r = await fetch("/api/scripts/" + encodeURIComponent(name));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+    document.getElementById("script-code").value = d.code;
+    document.getElementById("script-status").textContent = "📂 " + name + " geladen – bereit zum Bearbeiten.";
+  } catch (e) {
+    document.getElementById("script-status").textContent = "❌ Fehler beim Laden: " + e;
+  }
+});
 
 document.getElementById("script-form").addEventListener("submit", async function (ev) {
   ev.preventDefault();
@@ -420,6 +455,7 @@ document.getElementById("script-form").addEventListener("submit", async function
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     document.getElementById("script-status").textContent = "✅ " + (data.status || "Skript gespeichert");
+    loadScripts();
     loadAudit();
   } catch (e) {
     document.getElementById("script-status").textContent = "❌ Fehler: " + e;
@@ -477,6 +513,7 @@ loadUsers();
 loadPaths();
 loadLinksAdmin();
 loadLiveConfig();
+loadScripts();
 loadAudit();
 </script>
 
