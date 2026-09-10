@@ -10,26 +10,27 @@ log() {
 }
 
 log "=== hAI.TPCGCamScript Container startet ==="
-log "Ports: HTTP 8080 (extern 8067) | FTP 21 | FTPS 990 (extern 9900) | SFTP 22 (extern 2222)"
-log "SFTP_USER=${SFTP_USER:-<unset>} | FTPS_USER=${FTPS_USER:-<unset>} | Intervall=${PROCESS_INTERVAL_SECONDS:-30}s"
+log "Ports: HTTP 8080 (extern 8067) | FTP 21 | SFTP 22 (extern 2222) | PASV 30000-30010"
+log "SFTP_USER=${SFTP_USER:-<unset>} | Intervall=${PROCESS_INTERVAL_SECONDS:-30}s"
 
-# FTP/SFTP User anlegen
+# Verarbeitungsskripte aufs Volume legen, falls noch nicht vorhanden
+if [ -d /app/scripts-defaults ]; then
+  for f in /app/scripts-defaults/*.py; do
+    [ -e "/data/scripts/$(basename "$f")" ] || cp "$f" /data/scripts/
+  done
+fi
+
+# FTP/SFTP User anlegen (Home = /data/input -> pure-ftpd chrooted dorthin)
 if [ -n "$SFTP_USER" ] && [ -n "$SFTP_PASSWORD" ]; then
   if ! id "$SFTP_USER" &>/dev/null; then
-    # Chroot-Basis /data/sftp, darunter ein beschreibbarer Ordner output
-    mkdir -p /data/sftp/output
-    chown root:root /data/sftp
-    chmod 755 /data/sftp
-
-    useradd -d /data/sftp/output -s /usr/sbin/nologin "$SFTP_USER" || true
+    useradd -d /data/input -s /usr/sbin/nologin "$SFTP_USER" || true
     echo "$SFTP_USER:$SFTP_PASSWORD" | chpasswd
-
-    chown "$SFTP_USER":"$SFTP_USER" /data/sftp/output || true
-    log "FTP/SFTP-User '$SFTP_USER' angelegt"
+    log "FTP/SFTP-User '$SFTP_USER' angelegt (Home/Chroot: /data/input)"
   else
-    log "FTP/SFTP-User '$SFTP_USER' existiert bereits"
+    usermod -d /data/input "$SFTP_USER" || true
+    echo "$SFTP_USER:$SFTP_PASSWORD" | chpasswd
+    log "FTP/SFTP-User '$SFTP_USER' existiert bereits (Home auf /data/input gesetzt, Passwort aktualisiert)"
   fi
-  echo "$SFTP_USER" >> /etc/vsftpd.userlist
 else
   log "WARNUNG: SFTP_USER/SFTP_PASSWORD nicht gesetzt - kein FTP-User angelegt"
 fi
@@ -42,31 +43,30 @@ if id "$SFTP_USER" &>/dev/null; then
 fi
 log "Upload-Ziele vorbereitet: /data/input/tennis + /data/input/padel (beschreibbar fuer ${SFTP_USER:-<unset>})"
 
-# Passive FTP-Adresse fuer externe Clients (Router-Portweiterleitung)
-if [ -n "$PASV_ADDRESS" ]; then
-  sed -i "s/^pasv_address=.*/pasv_address=${PASV_ADDRESS}/" /etc/vsftpd/vsftpd.conf
-  log "PASV_ADDRESS gesetzt: $PASV_ADDRESS"
-fi
-
-# Optionaler Klartext-Fallback (nur falls die Kamera kein explizites FTPS kann)
-if [ "${FTP_ALLOW_PLAIN:-false}" = "true" ]; then
-  sed -i "s/^force_local_logins_ssl=.*/force_local_logins_ssl=NO/" /etc/vsftpd/vsftpd.conf
-  sed -i "s/^force_local_data_ssl=.*/force_local_data_ssl=NO/" /etc/vsftpd/vsftpd.conf
-  log "WARNUNG: Klartext-FTP erlaubt (FTP_ALLOW_PLAIN=true) - nur fuer Kameras ohne explizites FTPS"
-fi
-
 # SSH/SFTP starten (Log direkt in Datei, da kein Syslog im Container laeuft)
 /usr/sbin/sshd -E /data/logs/sshd.log
 log "SFTP/SSH-Server gestartet (Port 22, Chroot: /data/input, Log: sshd.log)"
 
-# vsftpd starten: stderr mitschreiben und Lebenszeichen pruefen, damit ein
-# Startfehler (z. B. ungueltige Config-Option) nicht lautlos untergeht
-/usr/sbin/vsftpd /etc/vsftpd/vsftpd.conf >> "$LOG_DIR/vsftpd-start.log" 2>&1 &
+# pure-ftpd starten: komplette Konfiguration per Flags (keine Config-Datei,
+# kein PAM; Startfehler landen direkt auf stderr -> ftpd-start.log)
+FTP_ARGS="-l unix -A -E -b -p 30000:30010 -O w3c:$LOG_DIR/ftp-xfer.log"
+if [ -n "$PASV_ADDRESS" ]; then
+  FTP_ARGS="$FTP_ARGS -P $PASV_ADDRESS"
+  log "PASV_ADDRESS gesetzt: $PASV_ADDRESS"
+fi
+if [ "${FTP_ALLOW_PLAIN:-false}" = "true" ]; then
+  FTP_ARGS="$FTP_ARGS --tls=1"
+  log "WARNUNG: Klartext-FTP erlaubt (FTP_ALLOW_PLAIN=true; TLS optional verfuegbar)"
+else
+  FTP_ARGS="$FTP_ARGS --tls=2"
+fi
+
+/usr/sbin/pure-ftpd $FTP_ARGS >> "$LOG_DIR/ftpd-start.log" 2>&1 &
 sleep 2
 if ss -tln 2>/dev/null | grep -q ':21 '; then
-  log "FTP/FTPS-Server gestartet (Ports 21 + 990, Upload-Ziel: /data/input, Logs: vsftpd.log / vsftpd-xfer.log)"
+  log "FTP-Server (pure-ftpd) gestartet: Port 21, PASV 30000-30010, Upload-Ziel /data/input (Log: ftpd-start.log / ftp-xfer.log)"
 else
-  log "FEHLER: vsftpd lauscht nach dem Start nicht auf Port 21 - Details: $LOG_DIR/vsftpd-start.log"
+  log "FEHLER: pure-ftpd lauscht nach dem Start nicht auf Port 21 - Details: $LOG_DIR/ftpd-start.log"
 fi
 
 # Worker im Hintergrund starten
