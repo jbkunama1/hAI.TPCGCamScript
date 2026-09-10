@@ -4,6 +4,10 @@
       "enabled": false
     }
   },
+  "data_provider": {
+    "driver": "sqlite",
+    "name": "/var/lib/sftpgo/sftpgo.db"
+  },
   "ftp": {
     "bindings": [
       {

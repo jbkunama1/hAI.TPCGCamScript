@@ -29,6 +29,8 @@ services:
     image: drakkan/sftpgo:v2.7.5
     container_name: hai-transfer
     restart: unless-stopped
+    working_dir: /var/lib/sftpgo
+    command: ["serve", "--config-dir", "/etc/sftpgo"]
     ports:
       - "21:2021"
       - "2222:2022"
@@ -37,6 +39,9 @@ services:
       - "8081:8080"
     environment:
       TZ: ${TZ:-Europe/Berlin}
+      SFTPGO_CONFIG_DIR: /etc/sftpgo
+      SFTPGO_DATA_PROVIDER__DRIVER: sqlite
+      SFTPGO_DATA_PROVIDER__NAME: /var/lib/sftpgo/sftpgo.db
       SFTPGO_DEFAULT_ADMIN_USERNAME: ${TRANSFER_ADMIN_USER:-admin}
       SFTPGO_DEFAULT_ADMIN_PASSWORD: ${TRANSFER_ADMIN_PASSWORD}
       SFTPGO_COMMON__DEFENDER__ENABLED: "false"
@@ -49,7 +54,6 @@ services:
       SFTPGO_FTPD__BINDINGS__0__CERTIFICATE_KEY_FILE: "/var/lib/sftpgo/certs/ftps.key"
       SFTPGO_FTPD__BINDINGS__0__MIN_TLS_VERSION: "12"
       SFTPGO_SFTPD__BINDINGS__0__PORT: "2022"
-      SFTPGO_SFTPD__BINDINGS__0__HOST_KEY_ALGORITHMS: "rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256,ssh-ed25519"
     volumes:
       - /opt/hai-tpcg-cam-script/data/input:/srv/sftpgo/input
       - /opt/hai-tpcg-cam-script/data/transfer:/var/lib/sftpgo
