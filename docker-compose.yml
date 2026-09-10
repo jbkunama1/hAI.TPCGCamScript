@@ -8,7 +8,6 @@ services:
       - "8067:8080"
       - "21:21"
       - "2222:22"
-      - "9900:990"
       - "30000-30010:30000-30010"
 
     environment:
@@ -19,10 +18,8 @@ services:
       API_KEY: ${API_KEY}
       SFTP_USER: ${SFTP_USER:-tpcgtransfer}
       SFTP_PASSWORD: ${SFTP_PASSWORD}
-      FTPS_USER: ${FTPS_USER:-tpcgtransfer}
-      FTPS_PASSWORD: ${FTPS_PASSWORD}
       # Externer FTP-Zugriff hinter Router-Portweiterleitung:
-      # PASV_ADDRESS = oeffentliche IP/Hostname, die vsftpd dem Client fuer den Datenkanal meldet
+      # PASV_ADDRESS = oeffentliche IP/Hostname, die der FTP-Server dem Client fuer den Datenkanal meldet
       # FTP_ALLOW_PLAIN = true erlaubt Klartext-FTP (nur fuer Kameras ohne explizites FTPS)
       PASV_ADDRESS: ${PASV_ADDRESS:-}
       FTP_ALLOW_PLAIN: ${FTP_ALLOW_PLAIN:-false}
