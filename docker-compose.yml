@@ -31,9 +31,8 @@ services:
       DATA_ROOT: /data
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://cam.example.de}
       PROCESS_INTERVAL_SECONDS: ${PROCESS_INTERVAL_SECONDS:-30}
-      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-false}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-llava}
+      # Worker-Routine-Log nur alle N Sekunden (Erfolg/Fehler wird sofort geloggt)
+      WORKER_LOG_INTERVAL_SECONDS: ${WORKER_LOG_INTERVAL_SECONDS:-300}
 
     volumes:
       - /opt/hai-tpcg-cam-script/data/input:/data/input
