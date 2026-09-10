@@ -48,7 +48,7 @@ log "Upload-Ziele vorbereitet: /data/input/tennis + /data/input/padel (beschreib
 log "SFTP/SSH-Server gestartet (Port 22, Chroot: /data/input, Log: sshd.log)"
 
 # pure-ftpd starten: komplette Konfiguration per Flags (keine Config-Datei,
-# kein PAM; Startfehler landen direkt auf stderr -> ftpd-start.log)
+# kein PAM; Startfehler landen vor dem Daemonisieren auf stderr -> ftpd-start.log)
 FTP_ARGS="-l unix -A -E -b -p 30000:30010 -O w3c:$LOG_DIR/ftp-xfer.log"
 if [ -n "$PASV_ADDRESS" ]; then
   FTP_ARGS="$FTP_ARGS -P $PASV_ADDRESS"
@@ -63,7 +63,10 @@ fi
 
 /usr/sbin/pure-ftpd $FTP_ARGS >> "$LOG_DIR/ftpd-start.log" 2>&1 &
 sleep 2
-if ss -tln 2>/dev/null | grep -q ':21 '; then
+# Lebenszeichen-Check per Bash-Builtin /dev/tcp (ss/iproute2 ist im Slim-Image nicht installiert).
+# Hinweis: ein LEERES ftpd-start.log ist normal - pure-ftpd daemonisiert sich und schliesst stderr.
+if (exec 3<>/dev/tcp/127.0.0.1/21) 2>/dev/null; then
+  exec 3>&- 3<&-
   log "FTP-Server (pure-ftpd) gestartet: Port 21, PASV 30000-30010, Upload-Ziel /data/input (Log: ftpd-start.log / ftp-xfer.log)"
 else
   log "FEHLER: pure-ftpd lauscht nach dem Start nicht auf Port 21 - Details: $LOG_DIR/ftpd-start.log"
