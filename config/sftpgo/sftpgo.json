@@ -1,0 +1,31 @@
+{
+  "common": {
+    "defender": {
+      "enabled": false
+    }
+  },
+  "ftp": {
+    "bindings": [
+      {
+        "port": 2021,
+        "tls_mode": 0,
+        "certificate_file": "/var/lib/sftpgo/certs/ftps.crt",
+        "certificate_key_file": "/var/lib/sftpgo/certs/ftps.key",
+        "min_tls_version": 12,
+        "force_passive_ip": "",
+        "passive_connections_security": 0
+      }
+    ],
+    "passive_port_range": {
+      "start": 30000,
+      "end": 30010
+    }
+  },
+  "sftpd": {
+    "bindings": [
+      {
+        "port": 2022
+      }
+    ]
+  }
+}

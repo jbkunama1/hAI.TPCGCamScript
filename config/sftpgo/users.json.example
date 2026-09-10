@@ -1,0 +1,13 @@
+{
+  "username": "tpcgtransfer",
+  "password": "CHANGE_ME_TRANSFER_PASSWORD",
+  "home_dir": "/srv/sftpgo/input",
+  "permissions": {
+    "/": ["list", "download", "upload", "overwrite", "delete", "rename", "create_dirs"]
+  },
+  "status": 1,
+  "filters": {
+    "tls_username": "",
+    "hooks": {}
+  }
+}

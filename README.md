@@ -3,22 +3,55 @@
 Der Stack besteht aus zwei strikt getrennten Diensten:
 
 - `hai-tpcgcamscript`: Flask, Gunicorn, Kamera-Worker und Live-Ausgabe.
-- `hai-transfer`: fertiger SFTPGo-Container für **FTP, explizites FTPS und SFTP**.
+- `hai-transfer`: gepinntes `drakkan/sftpgo:v2.7.5` für **FTP, explizites FTPS und SFTP**.
 
 Der Hauptcontainer enthält keinerlei FTP-, FTPS- oder SFTP-Server, keine SSH-Konfiguration, keine Transfer-Benutzer und keine Transfer-Ports.
 
-## Ports
+## Transfer-Stack
 
 | Dienst | Host-Port | Container-Port |
 |---|---:|---:|
-| Web/API | 8067 | 8080 |
-| FTP | 21 | 2021 |
-| Explizites FTPS | 21 | 2021 |
+| FTP + explizites FTPS | 21 | 2021 |
 | SFTP | 2222 | 2022 |
-| SFTPGo-Webadmin | nicht veröffentlicht | 8080 |
+| SFTPGo-Webadmin | 8081 | 8080 |
 | PASV-Datenkanal | 30000–30010 | 30000–30010 |
 
-Für die Fritzbox: extern `521 -> 21` und `30000–30010 -> 30000–30010`. `PASV_ADDRESS` muss die öffentliche IP oder der öffentliche Hostname sein.
+Das Image ist bewusst auf `drakkan/sftpgo:v2.7.5` gepinnt. Ein Upgrade erfolgt kontrolliert durch eine Compose-Änderung, nicht automatisch durch `latest`.
+
+## Fritzbox
+
+- extern `521 -> 21`.
+- extern `30000–30010 -> 30000–30010`.
+- `PASV_ADDRESS` auf die öffentliche IP bzw. den öffentlichen Hostnamen setzen.
+- Für SFTP extern `2222 -> 2222`.
+
+## TLS-Zertifikat
+
+SFTPGo nutzt explizites FTPS mit TLS 1.2 oder höher. Zertifikat und Schlüssel liegen außerhalb des Images:
+
+```bash
+sudo mkdir -p /opt/hai-tpcg-cam-script/data/transfer-certs
+sudo chmod 700 /opt/hai-tpcg-cam-script/data/transfer-certs
+sudo cp ftps.crt /opt/hai-tpcg-cam-script/data/transfer-certs/ftps.crt
+sudo cp ftps.key /opt/hai-tpcg-cam-script/data/transfer-certs/ftps.key
+sudo chmod 644 /opt/hai-tpcg-cam-script/data/transfer-certs/ftps.crt
+sudo chmod 600 /opt/hai-tpcg-cam-script/data/transfer-certs/ftps.key
+```
+
+Das Zertifikat muss den öffentlichen FTP-Hostname abdecken. Für reine Kamera-Kompatibilität kann ein selbstsigniertes Zertifikat verwendet werden, moderne Clients sollten aber ein vertrauenswürdiges Zertifikat erhalten.
+
+## Benutzer
+
+Die Transfer-Benutzer werden in SFTPGo persistent unter `/opt/hai-tpcg-cam-script/data/transfer` gespeichert. Der erste Benutzer wird einmalig im SFTPGo-Webadmin angelegt:
+
+- Webadmin: `http://SERVER-IP:8081`.
+- Benutzername: Wert von `TRANSFER_USER`.
+- Passwort: Wert von `TRANSFER_PASSWORD`.
+- Home-Verzeichnis: `/srv/sftpgo/input`.
+- Rechte: Liste, Download, Upload, Überschreiben, Löschen, Umbenennen und Verzeichnisse anlegen.
+- FTP und SFTP aktivieren.
+
+Passwörter gehören nicht ins Repository. `users.json.example` ist nur eine Feldvorlage.
 
 ## Host-Verzeichnisse
 
@@ -30,21 +63,10 @@ sudo mkdir -p \
   /opt/hai-tpcg-cam-script/data/backups \
   /opt/hai-tpcg-cam-script/data/logs/transfer \
   /opt/hai-tpcg-cam-script/data/config \
-  /opt/hai-tpcg-cam-script/data/transfer
+  /opt/hai-tpcg-cam-script/data/transfer \
+  /opt/hai-tpcg-cam-script/data/transfer-certs \
+  /opt/hai-tpcg-cam-script/config/sftpgo
 ```
-
-## SFTPGo-Erstkonfiguration
-
-Nach dem ersten Start den SFTPGo-Webadmin lokal über den Docker-Netzwerkpfad bzw. einen temporären Port-Tunnel öffnen und einen Benutzer anlegen:
-
-- Benutzer-Home: `/srv/sftpgo/input`
-- FTP erlauben.
-- SFTP erlauben.
-- Passwort oder SSH-Key setzen.
-- Schreibrechte auf den benötigten Unterordnern aktivieren.
-- FTPS bei Bedarf mit einem Zertifikat in SFTPGo aktivieren.
-
-Die Zugangsdaten für den Transferdienst sind bewusst getrennt von den Web/API-Administratordaten.
 
 ## Deployment
 
@@ -60,12 +82,15 @@ docker network create highfishNetwork
 ADMIN_PASSWORD=...
 API_KEY=...
 TRANSFER_ADMIN_PASSWORD=...
+TRANSFER_USER=tpcgtransfer
+TRANSFER_PASSWORD=...
 PASV_ADDRESS=dein.public.hostname
 ```
 
-3. Stack aus `docker-compose.yml` deployen.
-4. SFTPGo-Benutzer im Transfer-Container anlegen.
-5. Erst danach die Fritzbox-Weiterleitungen aktivieren.
+3. Zertifikat und Schlüssel in `data/transfer-certs` ablegen.
+4. Stack aus `docker-compose.yml` deployen.
+5. SFTPGo-Webadmin öffnen und den Transfer-Benutzer anlegen bzw. prüfen.
+6. Danach die Fritzbox-Weiterleitungen aktivieren.
 
 ## Migration
 
