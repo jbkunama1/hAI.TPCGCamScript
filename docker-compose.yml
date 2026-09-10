@@ -29,8 +29,9 @@ services:
     image: drakkan/sftpgo:v2.7.5
     container_name: hai-transfer
     restart: unless-stopped
-    working_dir: /var/lib/sftpgo
+    entrypoint: ["/usr/bin/sftpgo"]
     command: ["serve", "--config-dir", "/etc/sftpgo"]
+    working_dir: /var/lib/sftpgo
     ports:
       - "21:2021"
       - "2222:2022"
