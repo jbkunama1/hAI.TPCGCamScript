@@ -191,10 +191,9 @@ def require_api_key(f):
             return f(*args, **kwargs)
         logger.warning(
             "401 Unauthorized (API): %s %s von %s",
-                request.method, request.path, request.remote_addr,
-            )
-            return _unauthorized_response()
-        return f(*args, **kwargs)
+            request.method, request.path, request.remote_addr,
+        )
+        return _unauthorized_response()
 
     return wrapper
 
@@ -213,7 +212,7 @@ def masked_env():
     for key in sorted(os.environ):
         value = os.environ.get(key) or ""
         if any(marker in key.upper() for marker in _SECRET_MARKERS):
-            env[key] = "••••••••" if value else "(leer)"
+            env[key] = "********" if value else "(leer)"
         else:
             env[key] = value
     return env
@@ -448,9 +447,9 @@ def api_add_link():
     if not title or not url.startswith(("http://", "https://")):
         return jsonify({"error": "Titel fehlt oder URL ungueltig"}), 400
     if image and not image.startswith(("http://", "https://", "/")):
-        return jsonify({"error": "Bild-URL ungueltig (http(s):// oder /…)"}), 400
+        return jsonify({"error": "Bild-URL ungueltig (http(s):// oder /\u2026)"}), 400
     lid = db.add_link(
-        title, url, body.get("icon") or "🔗", image, body.get("position") or 0, actor=_actor()
+        title, url, body.get("icon") or "\U0001F517", image, body.get("position") or 0, actor=_actor()
     )
     logger.info("Link angelegt: %s -> %s (durch %s)", title, url, _actor())
     return jsonify({"status": "created", "id": lid})
