@@ -21,6 +21,11 @@ services:
       SFTP_PASSWORD: ${SFTP_PASSWORD}
       FTPS_USER: ${FTPS_USER:-tpcgtransfer}
       FTPS_PASSWORD: ${FTPS_PASSWORD}
+      # Externer FTP-Zugriff hinter Router-Portweiterleitung:
+      # PASV_ADDRESS = oeffentliche IP/Hostname, die vsftpd dem Client fuer den Datenkanal meldet
+      # FTP_ALLOW_PLAIN = true erlaubt Klartext-FTP (nur fuer Kameras ohne explizites FTPS)
+      PASV_ADDRESS: ${PASV_ADDRESS:-}
+      FTP_ALLOW_PLAIN: ${FTP_ALLOW_PLAIN:-false}
       # WICHTIG: DATA_ROOT ist der Container-Pfad des Workers (nicht der Host-Pfad!).
       # Der Host-Pfad /opt/hai-tpcg-cam-script/data wird per Volume nach /data gemountet.
       DATA_ROOT: /data
