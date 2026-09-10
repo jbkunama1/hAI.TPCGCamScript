@@ -1,43 +1,61 @@
-# hAI.TPCGCamScript
+# hAI.TPCGCamScript 📸
 
-Der Stack besteht aus zwei strikt getrennten Diensten:
+[![Docker Image](https://img.shields.io/github/v/release/jbkunama1/hAI.TPCGCamScript?label=version&color=blue)](https://github.com/jbkunama1/hAI.TPCGCamScript/releases)
+[![License](https://img.shields.io/github/license/jbkunama1/hAI.TPCGCamScript?color=green)](LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/jbkunama1/hAI.TPCGCamScript/docker-publish.yml?label=build&color=brightgreen)](https://github.com/jbkunama1/hAI.TPCGCamScript/actions)
 
-- `hai-tpcgcamscript`: Flask, Gunicorn, Kamera-Worker und Live-Ausgabe.
-- `hai-transfer`: gepinntes `drakkan/sftpgo:v2.7.5` für FTP, explizites FTPS und SFTP.
+---
 
-## SFTPGo-Start
+### 🚀 Projekt-Übersicht
+Containerisierte Bildverarbeitung für TPCG-Live-Kameras. Alles in einem Container: **Python-Worker**, **Web-Admin**, **FTP/FTPS** und **SFTP**.
 
-Der Transfer-Container startet die Binary explizit:
+### 🛠️ Features
+- ✂️ **Bildverarbeitung:** Ein- oder Zwei-Kamera-Zuschnitt.
+- 🔒 **Sicherheit:** FTPS (Port 21) & SFTP (Port 22) integriert.
+- 🌐 **Web-Admin:** Live-Vorschau, Logs, Statistiken & Script-Editor.
+- ⚡ **Performance:** Alles in einem schlanken Debian-Container.
 
-```yaml
-entrypoint: ["/usr/bin/sftpgo"]
-command: ["serve", "--config-dir", "/etc/sftpgo"]
-```
+---
 
-Damit wird `serve` als Unterkommando von `/usr/bin/sftpgo` ausgeführt und nicht mehr als eigenständige Datei gesucht.
+### 📦 Installation
 
-## SFTPGo-Datenbank
+1. **Voraussetzungen:**
+   - Docker & Docker Compose installiert.
+   - Netzwerk `highfishNetwork` muss existieren:
+     ```bash
+     docker network create highfishNetwork
+     ```
 
-- Config: `/etc/sftpgo/sftpgo.json`.
-- SQLite-Datenbank: `/var/lib/sftpgo/sftpgo.db`.
-- Persistenz: `/opt/hai-tpcg-cam-script/data/transfer`.
-- Webadmin: Host-Port `8081`.
+2. **Starten:**
+   ```bash
+   # Repository klonen
+   git clone https://github.com/jbkunama1/hAI.TPCGCamScript.git
+   cd hAI.TPCGCamScript
 
-Vor dem Deploy einmalig anlegen:
+   # Container bauen und starten
+   docker compose up -d --build
+   ```
 
-```bash
-sudo mkdir -p \
-  /opt/hai-tpcg-cam-script/data/input \
-  /opt/hai-tpcg-cam-script/data/output \
-  /opt/hai-tpcg-cam-script/data/scripts \
-  /opt/hai-tpcg-cam-script/data/backups \
-  /opt/hai-tpcg-cam-script/data/logs/transfer \
-  /opt/hai-tpcg-cam-script/data/config \
-  /opt/hai-tpcg-cam-script/data/transfer \
-  /opt/hai-tpcg-cam-script/data/transfer-certs \
-  /opt/hai-tpcg-cam-script/config/sftpgo
+3. **Konfiguration:**
+   - Passe die `.env` Datei an (siehe `.env.example`).
+   - Daten liegen unter `/opt/hai-tpcg-cam-script/data/`.
 
-sudo chown -R 1000:1000 \
-  /opt/hai-tpcg-cam-script/data/transfer \
-  /opt/hai-tpcg-cam-script/data/logs/transfer
-```
+---
+
+### 🔌 Ports
+| Port | Dienst |
+| :--- | :--- |
+| `8067` | Web-Admin (HTTP) |
+| `21` | FTP / FTPS |
+| `22` | SFTP |
+| `30000-30010` | FTP Passive Ports |
+
+---
+
+### 🛡️ Sicherheit
+- **Kein unverschlüsseltes FTP.**
+- **Passwort-Schutz** für Admin-UI & API.
+- **TruffleHog** Action zur Secret-Prüfung aktiv.
+
+---
+*Entwickelt mit ❤️ für TPCG-Kameras.*
