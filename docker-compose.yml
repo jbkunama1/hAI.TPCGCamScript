@@ -3,34 +3,18 @@ services:
     image: ghcr.io/jbkunama1/hai.tpcgcamscript:latest
     container_name: hai-tpcg-cam-script
     restart: unless-stopped
-
     ports:
       - "8067:8080"
-      - "21:21"
-      - "2222:22"
-      - "30000-30010:30000-30010"
-
     environment:
       TZ: ${TZ:-Europe/Berlin}
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_PASS_HASH: ${ADMIN_PASS_HASH:-}
       API_KEY: ${API_KEY}
-      SFTP_USER: ${SFTP_USER:-tpcgtransfer}
-      SFTP_PASSWORD: ${SFTP_PASSWORD}
-      # Externer FTP-Zugriff hinter Router-Portweiterleitung:
-      # PASV_ADDRESS = oeffentliche IP/Hostname, die der FTP-Server dem Client fuer den Datenkanal meldet
-      # FTP_ALLOW_PLAIN = true erlaubt Klartext-FTP (nur fuer Kameras ohne explizites FTPS)
-      PASV_ADDRESS: ${PASV_ADDRESS:-}
-      FTP_ALLOW_PLAIN: ${FTP_ALLOW_PLAIN:-false}
-      # WICHTIG: DATA_ROOT ist der Container-Pfad des Workers (nicht der Host-Pfad!).
-      # Der Host-Pfad /opt/hai-tpcg-cam-script/data wird per Volume nach /data gemountet.
       DATA_ROOT: /data
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://cam.example.de}
       PROCESS_INTERVAL_SECONDS: ${PROCESS_INTERVAL_SECONDS:-30}
-      # Worker-Routine-Log nur alle N Sekunden (Erfolg/Fehler wird sofort geloggt)
       WORKER_LOG_INTERVAL_SECONDS: ${WORKER_LOG_INTERVAL_SECONDS:-300}
-
     volumes:
       - /opt/hai-tpcg-cam-script/data/input:/data/input
       - /opt/hai-tpcg-cam-script/data/output:/data/output
@@ -38,7 +22,33 @@ services:
       - /opt/hai-tpcg-cam-script/data/backups:/data/backups
       - /opt/hai-tpcg-cam-script/data/logs:/data/logs
       - /opt/hai-tpcg-cam-script/data/config:/data/config
+    networks:
+      - highfishNetwork
 
+  hai-transfer:
+    image: drakkan/sftpgo:latest
+    container_name: hai-transfer
+    restart: unless-stopped
+    ports:
+      - "21:2021"
+      - "2222:2022"
+      - "990:2121"
+      - "30000-30010:30000-30010"
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      SFTPGO_DEFAULT_ADMIN_USERNAME: ${TRANSFER_ADMIN_USER:-admin}
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: ${TRANSFER_ADMIN_PASSWORD}
+      SFTPGO_COMMON__DEFENDER__ENABLED: "false"
+      SFTPGO_FTPD__BINDINGS__0__PORT: "2021"
+      SFTPGO_FTPD__BINDINGS__0__FORCE_PASSIVE_IP: ${PASV_ADDRESS:-}
+      SFTPGO_FTPD__PASSIVE_PORT_RANGE__START: "30000"
+      SFTPGO_FTPD__PASSIVE_PORT_RANGE__END: "30010"
+      SFTPGO_SFTPD__BINDINGS__0__PORT: "2022"
+      SFTPGO_WEBDAVD__BINDINGS__0__PORT: "8081"
+    volumes:
+      - /opt/hai-tpcg-cam-script/data/input:/srv/sftpgo/input
+      - /opt/hai-tpcg-cam-script/data/transfer:/var/lib/sftpgo
+      - /opt/hai-tpcg-cam-script/data/logs/transfer:/var/log/sftpgo
     networks:
       - highfishNetwork
 
