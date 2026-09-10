@@ -59,9 +59,15 @@ fi
 /usr/sbin/sshd -E /data/logs/sshd.log
 log "SFTP/SSH-Server gestartet (Port 22, Chroot: /data/input, Log: sshd.log)"
 
-# vsftpd starten
-/usr/sbin/vsftpd /etc/vsftpd/vsftpd.conf &
-log "FTP/FTPS-Server gestartet (Ports 21 + 990, Upload-Ziel: /data/input, Logs: vsftpd.log / vsftpd-xfer.log)"
+# vsftpd starten: stderr mitschreiben und Lebenszeichen pruefen, damit ein
+# Startfehler (z. B. ungueltige Config-Option) nicht lautlos untergeht
+/usr/sbin/vsftpd /etc/vsftpd/vsftpd.conf >> "$LOG_DIR/vsftpd-start.log" 2>&1 &
+sleep 2
+if ss -tln 2>/dev/null | grep -q ':21 '; then
+  log "FTP/FTPS-Server gestartet (Ports 21 + 990, Upload-Ziel: /data/input, Logs: vsftpd.log / vsftpd-xfer.log)"
+else
+  log "FEHLER: vsftpd lauscht nach dem Start nicht auf Port 21 - Details: $LOG_DIR/vsftpd-start.log"
+fi
 
 # Worker im Hintergrund starten
 export PROCESS_INTERVAL_SECONDS="${PROCESS_INTERVAL_SECONDS:-30}"
