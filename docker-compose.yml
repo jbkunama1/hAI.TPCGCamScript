@@ -15,7 +15,6 @@ services:
       API_KEY: ${API_KEY}
       DATA_ROOT: /data
     volumes:
-    volumes:
       - /opt/hai-tpcg-cam-script/data:/data
     networks:
       - highfishNetwork
