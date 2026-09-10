@@ -203,6 +203,21 @@ def _actor():
     auth = request.authorization
     return auth.username if auth else None
 
+
+_SECRET_MARKERS = ("PASSWORD", "PASS", "SECRET", "TOKEN", "API_KEY", "HASH", "PRIVATE")
+
+
+def masked_env():
+    """Alle Umgebungsvariablen sortiert liefern; Secrets werden maskiert."""
+    env = {}
+    for key in sorted(os.environ):
+        value = os.environ.get(key) or ""
+        if any(marker in key.upper() for marker in _SECRET_MARKERS):
+            env[key] = "••••••••" if value else "(leer)"
+        else:
+            env[key] = value
+    return env
+
 # ----------------- Helpers -----------------
 
 def write_audit_log(action, details):
@@ -335,16 +350,7 @@ def api_status():
 @app.get("/api/info")
 @require_auth
 def api_info():
-    env_keys = [
-        "TZ", "ADMIN_USER", "SFTP_USER", "FTPS_USER", "DATA_ROOT",
-        "PUBLIC_BASE_URL", "PROCESS_INTERVAL_SECONDS",
-        "OLLAMA_ENABLED", "OLLAMA_BASE_URL", "OLLAMA_MODEL",
-    ]
-    env = {k: os.getenv(k) for k in env_keys if os.getenv(k) is not None}
-    env["API_KEY"] = "gesetzt" if API_KEY else "nicht gesetzt"
-    env["ADMIN_PASSWORD"] = (
-        "gesetzt (Bootstrap)" if (ADMIN_PASSWORD or ADMIN_PASS_HASH) else "nicht gesetzt"
-    )
+    env = masked_env()
     return jsonify(
         {
             "service": "hAI.TPCGCamScript",
@@ -687,9 +693,8 @@ def log_startup():
     )
     logger.info("Themes verfuegbar: %s", ", ".join(available_themes()))
     logger.info(
-        "Worker-Intervall=%ss | Ollama=%s",
+        "Worker-Intervall=%ss",
         os.getenv("PROCESS_INTERVAL_SECONDS", "30"),
-        os.getenv("OLLAMA_ENABLED", "false"),
     )
 
 

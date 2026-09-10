@@ -24,7 +24,7 @@ TENNIS_CROP_SIZE = (896, 504)
 PADEL_TARGET_SIZE = (896, 504)
 
 # Routine-Log nur alle N Sekunden (Erfolg/Fehler wird sofort geloggt)
-WORKER_LOG_INTERVAL = int(os.getenv("WORKER_LOG_INTERVAL_SECONDS", "120"))
+WORKER_LOG_INTERVAL = int(os.getenv("WORKER_LOG_INTERVAL_SECONDS", "300"))
 # Log-Zeilen aelter als N Stunden werden entfernt
 LOG_RETENTION_HOURS = int(os.getenv("LOG_RETENTION_HOURS", "48"))
 LOG_MAX_BYTES = int(os.getenv("LOG_MAX_BYTES", str(5 * 1024 * 1024)))
