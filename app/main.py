@@ -66,6 +66,7 @@ LOG_FILES = {
     "worker-errors": "worker-errors.log",
     "vsftpd": "vsftpd.log",
     "vsftpd-xfer": "vsftpd-xfer.log",
+    "vsftpd-start": "vsftpd-start.log",
     "sshd": "sshd.log",
     "gunicorn-access": "gunicorn-access.log",
 }
@@ -190,9 +191,10 @@ def require_api_key(f):
             return f(*args, **kwargs)
         logger.warning(
             "401 Unauthorized (API): %s %s von %s",
-            request.method, request.path, request.remote_addr,
-        )
-        return _unauthorized_response()
+                request.method, request.path, request.remote_addr,
+            )
+            return _unauthorized_response()
+        return f(*args, **kwargs)
 
     return wrapper
 
