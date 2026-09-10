@@ -1,67 +1,28 @@
 services:
   hai-tpcgcamscript:
-    image: ghcr.io/jbkunama1/hai.tpcgcamscript:latest
+    build: .
     container_name: hai-tpcg-cam-script
     restart: unless-stopped
     ports:
       - "8067:8080"
+      - "21:21"
+      - "22:22"
+      - "30000-30010:30000-30010"
     environment:
       TZ: ${TZ:-Europe/Berlin}
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      ADMIN_PASS_HASH: ${ADMIN_PASS_HASH:-}
       API_KEY: ${API_KEY}
       DATA_ROOT: /data
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://cam.example.de}
-      PROCESS_INTERVAL_SECONDS: ${PROCESS_INTERVAL_SECONDS:-30}
-      WORKER_LOG_INTERVAL_SECONDS: ${WORKER_LOG_INTERVAL_SECONDS:-300}
     volumes:
-      - /opt/hai-tpcg-cam-script/data/input:/data/input
-      - /opt/hai-tpcg-cam-script/data/output:/data/output
-      - /opt/hai-tpcg-cam-script/data/scripts:/data/scripts
-      - /opt/hai-tpcg-cam-script/data/backups:/data/backups
-      - /opt/hai-tpcg-cam-script/data/logs:/data/logs
-      - /opt/hai-tpcg-cam-script/data/config:/data/config
+      - /opt/hai-tpcg-cam-script/data:/data
     networks:
       - highfishNetwork
 
-  hai-transfer:
-    image: drakkan/sftpgo:v2.7.5
-    container_name: hai-transfer
-    restart: unless-stopped
-    working_dir: /var/lib/sftpgo
-    command: ["serve", "--config-dir", "/etc/sftpgo"]
-    ports:
-      - "21:2021"
-      - "2222:2022"
-      - "990:2121"
-      - "30000-30010:30000-30010"
-      - "8081:8080"
-    environment:
-      TZ: ${TZ:-Europe/Berlin}
-      SFTPGO_CONFIG_DIR: /etc/sftpgo
-      SFTPGO_DATA_PROVIDER__DRIVER: sqlite
-      SFTPGO_DATA_PROVIDER__NAME: /var/lib/sftpgo/sftpgo.db
-      SFTPGO_DEFAULT_ADMIN_USERNAME: ${TRANSFER_ADMIN_USER:-admin}
-      SFTPGO_DEFAULT_ADMIN_PASSWORD: ${TRANSFER_ADMIN_PASSWORD}
-      SFTPGO_COMMON__DEFENDER__ENABLED: "false"
-      SFTPGO_FTPD__BINDINGS__0__PORT: "2021"
-      SFTPGO_FTPD__BINDINGS__0__FORCE_PASSIVE_IP: ${PASV_ADDRESS:-}
-      SFTPGO_FTPD__PASSIVE_PORT_RANGE__START: "30000"
-      SFTPGO_FTPD__PASSIVE_PORT_RANGE__END: "30010"
-      SFTPGO_FTPD__BINDINGS__0__TLS_MODE: "0"
-      SFTPGO_FTPD__BINDINGS__0__CERTIFICATE_FILE: "/var/lib/sftpgo/certs/ftps.crt"
-      SFTPGO_FTPD__BINDINGS__0__CERTIFICATE_KEY_FILE: "/var/lib/sftpgo/certs/ftps.key"
-      SFTPGO_FTPD__BINDINGS__0__MIN_TLS_VERSION: "12"
-      SFTPGO_SFTPD__BINDINGS__0__PORT: "2022"
-    volumes:
-      - /opt/hai-tpcg-cam-script/data/input:/srv/sftpgo/input
-      - /opt/hai-tpcg-cam-script/data/transfer:/var/lib/sftpgo
-      - /opt/hai-tpcg-cam-script/data/logs/transfer:/var/log/sftpgo
-      - /opt/hai-tpcg-cam-script/data/transfer-certs:/var/lib/sftpgo/certs:ro
-      - /opt/hai-tpcg-cam-script/config/sftpgo:/etc/sftpgo:ro
-    networks:
-      - highfishNetwork
+networks:
+  highfishNetwork:
+    external: true
+    name: highfishNetwork
 
 networks:
   highfishNetwork:
