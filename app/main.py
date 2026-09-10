@@ -64,9 +64,8 @@ LOG_FILES = {
     "server": "server.log",
     "worker": "worker.log",
     "worker-errors": "worker-errors.log",
-    "vsftpd": "vsftpd.log",
-    "vsftpd-xfer": "vsftpd-xfer.log",
-    "vsftpd-start": "vsftpd-start.log",
+    "ftpd": "ftpd-start.log",
+    "ftp-xfer": "ftp-xfer.log",
     "sshd": "sshd.log",
     "gunicorn-access": "gunicorn-access.log",
 }
@@ -358,8 +357,8 @@ def api_info():
             "themes_available": available_themes(),
             "ports": {
                 "http": {"extern": 8067, "intern": 8080},
-                "ftp": {"extern": 21, "intern": 21},
-                "ftps": {"extern": 9900, "intern": 990},
+                "ftp": {"extern": 521, "intern": 21},
+                "ftps": {"extern": "deaktiviert", "intern": "–"},
                 "sftp": {"extern": 2222, "intern": 22},
             },
             "database": {
