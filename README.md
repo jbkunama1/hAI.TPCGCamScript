@@ -5,9 +5,18 @@ Der Stack besteht aus zwei strikt getrennten Diensten:
 - `hai-tpcgcamscript`: Flask, Gunicorn, Kamera-Worker und Live-Ausgabe.
 - `hai-transfer`: gepinntes `drakkan/sftpgo:v2.7.5` für FTP, explizites FTPS und SFTP.
 
-## SFTPGo-Datenbank-Fix
+## SFTPGo-Start
 
-SFTPGo wird mit einem expliziten Konfigurations- und Datenpfad gestartet:
+Der Transfer-Container startet die Binary explizit:
+
+```yaml
+entrypoint: ["/usr/bin/sftpgo"]
+command: ["serve", "--config-dir", "/etc/sftpgo"]
+```
+
+Damit wird `serve` als Unterkommando von `/usr/bin/sftpgo` ausgeführt und nicht mehr als eigenständige Datei gesucht.
+
+## SFTPGo-Datenbank
 
 - Config: `/etc/sftpgo/sftpgo.json`.
 - SQLite-Datenbank: `/var/lib/sftpgo/sftpgo.db`.
@@ -32,12 +41,3 @@ sudo chown -R 1000:1000 \
   /opt/hai-tpcg-cam-script/data/transfer \
   /opt/hai-tpcg-cam-script/data/logs/transfer
 ```
-
-Die FTPS-Dateien müssen hier liegen:
-
-```text
-/opt/hai-tpcg-cam-script/data/transfer-certs/ftps.crt
-/opt/hai-tpcg-cam-script/data/transfer-certs/ftps.key
-```
-
-Der Dienst startet mit `serve --config-dir /etc/sftpgo`; die SQLite-Datenbank wird nicht mehr relativ zum unbekannten Arbeitsverzeichnis gesucht.
