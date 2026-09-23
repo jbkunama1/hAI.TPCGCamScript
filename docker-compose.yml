@@ -6,7 +6,7 @@ services:
     ports:
       - "8067:8080"
       - "21:21"
-      - "22:22"
+      - "2222:22"
       - "30000-30010:30000-30010"
     environment:
       TZ: ${TZ:-Europe/Berlin}
