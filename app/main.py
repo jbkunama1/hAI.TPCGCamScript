@@ -50,6 +50,8 @@ LOG_FILES = {
     "worker-errors": "worker-errors.log",
     "sshd": "sshd.log",
     "gunicorn-access": "gunicorn-access.log",
+    "vsftpd": "vsftpd.log",
+    "xferlog": "xferlog",
 }
 DEFAULT_SINGLE = """from pathlib import Path
 from PIL import Image
