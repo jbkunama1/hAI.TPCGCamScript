@@ -184,7 +184,7 @@ def api_status(): return jsonify({'service':'hAI.TPCGCamScript','status':'runnin
 @app.get('/api/info')
 @require_auth
 def api_info():
-    return jsonify({'service':'hAI.TPCGCamScript','version':APP_VERSION,'theme':get_active_theme(),'themes_available':available_themes(),'ports':{'http':{'extern':8067,'intern':8080},'ftp':'separater hai-transfer-Container','ftps':'separater hai-transfer-Container','sftp':'separater hai-transfer-Container'},'database':{'path':str(db.DB_PATH),'users':len(db.list_users()),'paths':len(db.list_paths()),'links':len(db.list_links()),'cameras':len(db.list_cameras())},'env':masked_env()})
+    return jsonify({'service':'hAI.TPCGCamScript','version':APP_VERSION,'theme':get_active_theme(),'themes_available':available_themes(),'ports':{'http':{'extern':8067,'intern':8080},'ftp':{'extern':21,'intern':21},'ftps':{'extern':9900,'intern':990},'sftp':{'extern':2222,'intern':22},'pasv_range':'30000-30010'},'database':{'path':str(db.DB_PATH),'users':len(db.list_users()),'paths':len(db.list_paths()),'links':len(db.list_links()),'cameras':len(db.list_cameras())},'env':masked_env()})
 @app.get('/api/theme')
 @require_auth
 def get_theme(): return jsonify({'theme':get_active_theme(),'available':available_themes()})

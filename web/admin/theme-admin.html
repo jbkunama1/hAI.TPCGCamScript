@@ -166,10 +166,17 @@ async function fetchInfo() {
       html += "<tr><th>SQLite-DB</th><td>" + d.database.path + "<br>👥 " + d.database.users +
         " Benutzer · 🗂️ " + d.database.paths + " Pfade · 🔗 " + d.database.links + " Links · 📹 " + (d.database.cameras || 0) + " Kameras</td></tr>";
     }
-    html += "<tr><th>Ports</th><td>🌐 HTTP " + d.ports.http.extern + " → " + d.ports.http.intern +
-      "<br>📁 FTP " + d.ports.ftp.extern +
-      "<br>🔒 FTPS " + d.ports.ftps.extern + " → " + d.ports.ftps.intern +
-      "<br>🔑 SFTP " + d.ports.sftp.extern + " → " + d.ports.sftp.intern + "</td></tr>";
+    function fmtPort(p) {
+      if (!p) return "–";
+      if (typeof p === "string") return p;
+      if (typeof p === "object" && p.extern) return p.extern + (p.intern ? " → " + p.intern : "");
+      return String(p);
+    }
+    html += "<tr><th>Ports</th><td>🌐 HTTP " + fmtPort(d.ports.http) +
+      "<br>📁 FTP " + fmtPort(d.ports.ftp) +
+      "<br>🔒 FTPS " + fmtPort(d.ports.ftps) +
+      "<br>🔑 SFTP " + fmtPort(d.ports.sftp) +
+      (d.ports.pasv_range ? "<br>📡 Passive " + d.ports.pasv_range : "") + "</td></tr>";
     html += "<tr><th>Umgebung</th><td>" +
       Object.entries(d.env).map(function (e) { return e[0] + " = " + e[1]; }).join("<br>") +
       "</td></tr></table>";
