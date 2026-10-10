@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import re
 import sys
 import time
@@ -36,7 +37,7 @@ logger = logging.getLogger("tpcg-worker")
 logger.setLevel(logging.INFO)
 _formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 if not logger.handlers:
-    _fh = logging.FileHandler(LOGS_DIR / "worker.log", encoding="utf-8")
+    _fh = RotatingFileHandler(LOGS_DIR / "worker.log", maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
     _fh.setFormatter(_formatter)
     logger.addHandler(_fh)
     _sh = logging.StreamHandler(sys.stdout)
