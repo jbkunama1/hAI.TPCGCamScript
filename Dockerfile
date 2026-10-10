@@ -5,7 +5,9 @@ RUN apt-get update && apt-get install -y \
     python3 python3-pip python3-venv \
     libjpeg-dev zlib1g-dev \
     vsftpd openssh-server supervisor \
+    openssl ssl-cert \
     && rm -rf /var/lib/apt/lists/*
+RUN ssh-keygen -A
 
 # Setup FTP/SFTP
 RUN mkdir -p /var/run/vsftpd/empty /var/run/sshd /data/input /data/output /data/scripts /data/backups /data/logs /data/config
@@ -24,6 +26,8 @@ COPY scripts/process_single.py scripts/process_pair.py /app/scripts-defaults/
 RUN chmod +x scripts/*.sh
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY config/vsftpd.conf /etc/vsftpd.conf
+COPY config/vsftpd-990.conf /etc/vsftpd-990.conf
+COPY config/sshd_config /etc/ssh/sshd_config
 
 EXPOSE 8080 21 22 990 30000-30010
 ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
