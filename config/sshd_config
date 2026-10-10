@@ -12,7 +12,7 @@ UsePAM yes
 
 Subsystem sftp internal-sftp
 
-AllowUsers tpcgtransfer
+AllowUsers tpcgtransfer ftpuser
 # Kamera-Uploads landen im Worker-Eingang (Unterordner tennis/ und padel/)
 ChrootDirectory /data/input
 X11Forwarding no
