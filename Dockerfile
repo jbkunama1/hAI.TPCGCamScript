@@ -25,5 +25,5 @@ RUN chmod +x scripts/*.sh
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY config/vsftpd.conf /etc/vsftpd.conf
 
-EXPOSE 8080 21 22 30000-30010
+EXPOSE 8080 21 22 990 30000-30010
 ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

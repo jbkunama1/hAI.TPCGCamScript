@@ -16,7 +16,7 @@ services:
     container_name: hai-tpcg-cam-script
     restart: unless-stopped
     ports:
-      - "8088:8080"   # Flask UI
+      - "8067:8080"   # Flask UI
       - "2222:22"     # SFTP/SSH
       - "9900:990"    # FTPS
       - "30000-30010:30000-30010"  # FTPS passive‑Ports
@@ -37,7 +37,7 @@ Die Anwendung verwendet jetzt `RotatingFileHandler` für die Log‑Dateien `app.
 ## Schnell‑Start
 1. **Umgebungsvariablen** in `.env.example` anpassen (Passwörter, API‑Key, etc.).
 2. `docker compose up -d` starten – alle Komponenten laufen im selben Container.
-3. Admin‑UI unter `http://localhost:8088` öffnen (Basic‑Auth mit `ADMIN_USER`/`ADMIN_PASSWORD`).
+3. Admin‑UI unter `http://localhost:8067` öffnen (Basic‑Auth mit `ADMIN_USER`/`ADMIN_PASSWORD`).
 4. SFTP‑Zugang über Port 2222 (`tpcgtransfer`/`SFTP_PASSWORD`).
 5. FTPS‑Zugang über Port 9900 (`tpcgtransfer`/`FTPS_PASSWORD`).
 
