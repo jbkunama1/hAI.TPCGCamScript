@@ -28,6 +28,8 @@ COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY config/vsftpd.conf /etc/vsftpd.conf
 COPY config/vsftpd-990.conf /etc/vsftpd-990.conf
 COPY config/sshd_config /etc/ssh/sshd_config
+COPY config/entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 8080 21 22 990 30000-30010
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/entrypoint.sh"]
