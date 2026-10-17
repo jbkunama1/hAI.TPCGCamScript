@@ -74,6 +74,38 @@
     <div class="hint" id="camera-status"></div>
   </form>
 
+  <h2>📸 Bildquelle: FTP oder Snapshot-Abruf</h2>
+  <form id="snap-form">
+    <div class="checkbox-row">
+      <label><input type="radio" name="snap-mode" value="ftp" checked /> 📁 FTP-Upload (Kamera lädt selbst hoch, kein Abruf)</label><br />
+      <label><input type="radio" name="snap-mode" value="snapshot" /> 📸 Snapshot-Abruf (Server holt das Bild per HTTP)</label>
+    </div>
+    <div id="snap-fields">
+      <select id="snap-source">
+        <option value="reolink">Reolink (URL wird automatisch gebaut)</option>
+        <option value="custom">Eigene URL</option>
+      </select>
+      <div id="snap-reolink">
+        <input type="text" id="snap-host" placeholder="Kamera-IP oder Hostname, z. B. 192.168.178.60" />
+        <input type="text" id="snap-port" placeholder="Port (leer = 80 bzw. 443)" />
+        <input type="text" id="snap-channel" placeholder="Kanal (Standard 0)" />
+        <label class="checkbox-row"><input type="checkbox" id="snap-https" /> HTTPS verwenden</label>
+      </div>
+      <div id="snap-custom" style="display:none">
+        <input type="text" id="snap-url" placeholder="https://… (komplette Snapshot-URL, liefert ein JPEG)" />
+      </div>
+      <input type="text" id="snap-user" placeholder="Benutzer" autocomplete="off" />
+      <input type="password" id="snap-pass" placeholder="Passwort" autocomplete="new-password" />
+      <label class="checkbox-row"><input type="checkbox" id="snap-verify" /> TLS-Zertifikat prüfen (aus bei selbstsigniert)</label>
+      <input type="text" id="snap-interval" placeholder="Intervall in Sekunden (10–3600)" />
+      <select id="snap-target"></select>
+    </div>
+    <button type="submit">Speichern</button>
+    <button type="button" id="snap-test">Test-Abruf (ohne Speichern)</button>
+    <div class="hint" id="snap-msg">Das Bild landet im Eingangsverzeichnis und wird vom Worker wie ein FTP-Upload verarbeitet (Tennis: &gt; 80 KB, Padel: &gt; 20 KB; Padel braucht 00 und 01).</div>
+    <pre id="snap-status-view">Lade…</pre>
+  </form>
+
   <h2>🗂️ Bildpfade</h2>
   <div id="path-list">Lade…</div>
   <form id="path-form">
@@ -431,13 +463,13 @@ document.getElementById("script-form").addEventListener("submit", async function
   ev.preventDefault();
   const fd = new FormData(ev.target);
   try {
-    const resp = await fetch("/api/script", {
+    const resp = await fetch("/api/scripts/" + encodeURIComponent(fd.get("name")), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: fd.get("name"), code: fd.get("code") })
+      body: JSON.stringify({ code: fd.get("code") })
     });
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || ("HTTP " + resp.status));
     document.getElementById("script-status").textContent = "✅ " + (data.status || "Skript gespeichert");
     loadScripts();
     loadAudit();
@@ -500,6 +532,7 @@ loadLinksAdmin();
 loadScripts();
 loadAudit();
 </script>
+<script src="/assets/snapshot-admin.js"></script>
 
 </body>
 </html>
