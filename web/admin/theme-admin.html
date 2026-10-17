@@ -2,16 +2,29 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>TPCG – Admin-Bereich ⚙️</title>
+  <title>TPCG - Admin-Bereich</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: Verdana, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #f3f4f6; color: #111827; }
-    .shell { max-width: 760px; margin: 2rem auto; padding: 1.5rem 1.75rem; background: #ffffff; border-radius: 0.75rem; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1); }
+    .shell { max-width: 1000px; margin: 1.5rem auto; padding: 1.5rem 1.75rem; background: #ffffff; border-radius: 0.75rem; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1); }
     h1 { margin-top: 0; font-size: 1.4rem; }
-    h2 { font-size: 1.05rem; margin: 1.6rem 0 0.5rem; }
+    h2 { font-size: 1.05rem; margin: 0.4rem 0 0.6rem; }
     .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.95rem; }
     .nav a { color: #1d4ed8; text-decoration: none; }
-    .nav a:hover { text-decoration: underline; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0 1rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.6rem; }
+    .tabs button.tabbtn { margin: 0; padding: 0.4rem 0.8rem; border-radius: 0.5rem; background: #e5e7eb; color: #111827; font-size: 0.85rem; }
+    .tabs button.tabbtn:hover { background: #d1d5db; }
+    .tabs button.tabbtn.active { background: #1d4ed8; color: #ffffff; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; align-items: start; }
+    .env-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.75rem; }
+    .env-card { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem 0.7rem; }
+    .env-card h3 { margin: 0 0 0.4rem; font-size: 0.9rem; }
+    .env-row { display: flex; gap: 0.5rem; font-size: 0.8rem; padding: 0.2rem 0; border-top: 1px dashed #e5e7eb; }
+    .env-key { font-weight: 600; flex: 0 0 42%; word-break: break-all; }
+    .env-val { word-break: break-all; font-family: monospace; }
+    .env-val.secret { color: #b91c1c; }
     .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.4rem; }
     .theme-option { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.6rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; font-size: 0.88rem; }
     .theme-option label { font-weight: 600; cursor: pointer; }
@@ -27,7 +40,7 @@
     input[type="checkbox"] { width: auto; margin: 0.3rem 0; }
     .checkbox-row { font-size: 0.9rem; margin-bottom: 0.4rem; }
     select { padding: 0.3rem; font-size: 0.9rem; max-width: 100%; }
-    pre { background: #111827; color: #d1fae5; padding: 0.75rem; border-radius: 0.5rem; max-height: 320px; overflow: auto; font-size: 0.78rem; white-space: pre-wrap; }
+    pre { background: #111827; color: #d1fae5; padding: 0.75rem; border-radius: 0.5rem; max-height: 420px; overflow: auto; font-size: 0.78rem; white-space: pre-wrap; }
     img.link-thumb { max-height: 22px; max-width: 34px; border-radius: 3px; vertical-align: middle; }
   </style>
 </head>
@@ -35,141 +48,261 @@
 
 <div class="shell">
   <div class="nav">
-    <span>⚙️ <strong>Admin-Bereich</strong></span>
-    <a href="/live">🏠 Zur Live-Ansicht</a>
+    <span><strong>Admin-Bereich</strong></span>
+    <a href="/live">Zur Live-Ansicht</a>
   </div>
 
-  <h1>TPCG Live – Verwaltung</h1>
+  <h1>TPCG Live - Verwaltung</h1>
 
-  <h2>🖥️ System-Info</h2>
-  <div id="sysinfo">Lade…</div>
+  <div class="tabs" id="tabbar">
+    <button type="button" class="tabbtn" data-tab="system">System</button>
+    <button type="button" class="tabbtn" data-tab="env">Umgebung</button>
+    <button type="button" class="tabbtn" data-tab="theme">Theme</button>
+    <button type="button" class="tabbtn" data-tab="users">Benutzer</button>
+    <button type="button" class="tabbtn" data-tab="cameras">Kameras</button>
+    <button type="button" class="tabbtn" data-tab="source">Bildquelle</button>
+    <button type="button" class="tabbtn" data-tab="paths">Bildpfade</button>
+    <button type="button" class="tabbtn" data-tab="links">Links</button>
+    <button type="button" class="tabbtn" data-tab="scripts">Skripte</button>
+    <button type="button" class="tabbtn" data-tab="audit">Audit</button>
+    <button type="button" class="tabbtn" data-tab="logs">Logs</button>
+  </div>
 
-  <h2>🎨 Theme-Auswahl (Frontend)</h2>
-  <form id="theme-form">
-    <div class="theme-grid" id="theme-options">Lade Themes…</div>
-    <button type="submit">Theme speichern</button>
-    <div class="hint" id="theme-status"></div>
-  </form>
+  <section class="tab" id="tab-system">
+    <h2>System-Info</h2>
+    <div id="sysinfo">Lade...</div>
+  </section>
 
-  <h2>👥 Benutzer</h2>
-  <div id="user-list">Lade…</div>
-  <form id="user-form">
-    <input type="text" id="user-name" placeholder="Benutzername" required />
-    <input type="password" id="user-pass" placeholder="Passwort (mind. 6 Zeichen)" required />
-    <button type="submit">Benutzer anlegen</button>
-    <div class="hint" id="user-status"></div>
-  </form>
+  <section class="tab" id="tab-env">
+    <h2>Umgebung &amp; Zugaenge</h2>
+    <button type="button" id="env-reveal">Geheimnisse anzeigen</button>
+    <div class="hint">Passwoerter, API-Key und Hashes sind standardmaessig maskiert. Das Einblenden wird im Audit protokolliert.</div>
+    <div class="env-grid" id="env-grid" style="margin-top:0.75rem">Lade...</div>
+  </section>
 
-  <h2>📹 Kameras</h2>
-  <div id="camera-list">Lade…</div>
-  <form id="camera-form">
-    <input type="text" id="cam-uid" placeholder="UID (aus der Reolink-App)" required />
-    <input type="text" id="cam-name" placeholder="Name, z. B. Tennis Eingang" required />
-    <input type="text" id="cam-ip" placeholder="IP (optional), z. B. 192.168.178.60" />
-    <input type="text" id="cam-location" placeholder="Einsatzort, z. B. Clubheim / Platz 4+5" />
-    <input type="text" id="cam-ports" placeholder="Offene Ports, z. B. 80, 443, 554, 8000" />
-    <label class="checkbox-row"><input type="checkbox" id="cam-active" checked /> aktiv</label>
-    <input type="text" id="cam-note" placeholder="Notiz (optional)" />
-    <button type="submit">Kamera hinzufügen</button>
-    <div class="hint" id="camera-status"></div>
-  </form>
+  <section class="tab" id="tab-theme">
+    <h2>Theme-Auswahl (Frontend)</h2>
+    <form id="theme-form">
+      <div class="theme-grid" id="theme-options">Lade Themes...</div>
+      <button type="submit">Theme speichern</button>
+      <div class="hint" id="theme-status"></div>
+    </form>
+  </section>
 
-  <h2>📸 Bildquelle: FTP oder Snapshot-Abruf</h2>
-  <form id="snap-form">
-    <div class="checkbox-row">
-      <label><input type="radio" name="snap-mode" value="ftp" checked /> 📁 FTP-Upload (Kamera lädt selbst hoch, kein Abruf)</label><br />
-      <label><input type="radio" name="snap-mode" value="snapshot" /> 📸 Snapshot-Abruf (Server holt das Bild per HTTP)</label>
+  <section class="tab" id="tab-users">
+    <h2>Benutzer</h2>
+    <div class="cols2">
+      <div id="user-list">Lade...</div>
+      <form id="user-form">
+        <input type="text" id="user-name" placeholder="Benutzername" required />
+        <input type="password" id="user-pass" placeholder="Passwort (mind. 6 Zeichen)" required />
+        <button type="submit">Benutzer anlegen</button>
+        <div class="hint" id="user-status"></div>
+      </form>
     </div>
-    <div id="snap-fields">
-      <select id="snap-source">
-        <option value="reolink">Reolink (URL wird automatisch gebaut)</option>
-        <option value="custom">Eigene URL</option>
-      </select>
-      <div id="snap-reolink">
-        <input type="text" id="snap-host" placeholder="Kamera-IP oder Hostname, z. B. 192.168.178.60" />
-        <input type="text" id="snap-port" placeholder="Port (leer = 80 bzw. 443)" />
-        <input type="text" id="snap-channel" placeholder="Kanal (Standard 0)" />
-        <label class="checkbox-row"><input type="checkbox" id="snap-https" /> HTTPS verwenden</label>
-      </div>
-      <div id="snap-custom" style="display:none">
-        <input type="text" id="snap-url" placeholder="https://… (komplette Snapshot-URL, liefert ein JPEG)" />
-      </div>
-      <input type="text" id="snap-user" placeholder="Benutzer" autocomplete="off" />
-      <input type="password" id="snap-pass" placeholder="Passwort" autocomplete="new-password" />
-      <label class="checkbox-row"><input type="checkbox" id="snap-verify" /> TLS-Zertifikat prüfen (aus bei selbstsigniert)</label>
-      <input type="text" id="snap-interval" placeholder="Intervall in Sekunden (10–3600)" />
-      <select id="snap-target"></select>
+  </section>
+
+  <section class="tab" id="tab-cameras">
+    <h2>Kameras</h2>
+    <div class="cols2">
+      <div id="camera-list">Lade...</div>
+      <form id="camera-form">
+        <input type="text" id="cam-uid" placeholder="UID (aus der Reolink-App)" required />
+        <input type="text" id="cam-name" placeholder="Name, z. B. Tennis Eingang" required />
+        <input type="text" id="cam-ip" placeholder="IP (optional), z. B. 192.168.178.60" />
+        <input type="text" id="cam-location" placeholder="Einsatzort, z. B. Clubheim / Platz 4+5" />
+        <input type="text" id="cam-ports" placeholder="Offene Ports, z. B. 80, 443, 554, 8000" />
+        <label class="checkbox-row"><input type="checkbox" id="cam-active" checked /> aktiv</label>
+        <input type="text" id="cam-note" placeholder="Notiz (optional)" />
+        <button type="submit">Kamera hinzufuegen</button>
+        <div class="hint" id="camera-status"></div>
+      </form>
     </div>
-    <button type="submit">Speichern</button>
-    <button type="button" id="snap-test">Test-Abruf (ohne Speichern)</button>
-    <div class="hint" id="snap-msg">Das Bild landet im Eingangsverzeichnis und wird vom Worker wie ein FTP-Upload verarbeitet (Tennis: &gt; 80 KB, Padel: &gt; 20 KB; Padel braucht 00 und 01).</div>
-    <pre id="snap-status-view">Lade…</pre>
-  </form>
+  </section>
 
-  <h2>🗂️ Bildpfade</h2>
-  <div id="path-list">Lade…</div>
-  <form id="path-form">
-    <input type="text" id="path-key" placeholder="Schlüssel, z. B. tennis" required />
-    <input type="text" id="path-path" placeholder="Pfad unter /output, z. B. tennis/webcam_live.jpg" required />
-    <input type="text" id="path-label" placeholder="Anzeigename (optional)" />
-    <button type="submit">Pfad speichern</button>
-    <div class="hint" id="path-status"></div>
-  </form>
+  <section class="tab" id="tab-source">
+    <h2>Bildquelle: FTP oder Snapshot-Abruf</h2>
+    <form id="snap-form">
+      <div class="checkbox-row">
+        <label><input type="radio" name="snap-mode" value="ftp" checked /> FTP-Upload (Kamera laedt selbst hoch, kein Abruf)</label><br />
+        <label><input type="radio" name="snap-mode" value="snapshot" /> Snapshot-Abruf (Server holt das Bild per HTTP)</label>
+      </div>
+      <div id="snap-fields">
+        <select id="snap-source">
+          <option value="reolink">Reolink (URL wird automatisch gebaut)</option>
+          <option value="custom">Eigene URL</option>
+        </select>
+        <div id="snap-reolink">
+          <input type="text" id="snap-host" placeholder="Kamera-IP oder Hostname, z. B. 192.168.178.60" />
+          <input type="text" id="snap-port" placeholder="Port (leer = 80 bzw. 443)" />
+          <input type="text" id="snap-channel" placeholder="Kanal (Standard 0)" />
+          <label class="checkbox-row"><input type="checkbox" id="snap-https" /> HTTPS verwenden</label>
+        </div>
+        <div id="snap-custom" style="display:none">
+          <input type="text" id="snap-url" placeholder="https://... (komplette Snapshot-URL, liefert ein JPEG)" />
+        </div>
+        <input type="text" id="snap-user" placeholder="Benutzer" autocomplete="off" />
+        <input type="password" id="snap-pass" placeholder="Passwort" autocomplete="new-password" />
+        <label class="checkbox-row"><input type="checkbox" id="snap-verify" /> TLS-Zertifikat pruefen (aus bei selbstsigniert)</label>
+        <input type="text" id="snap-interval" placeholder="Intervall in Sekunden (10-3600)" />
+        <select id="snap-target"></select>
+      </div>
+      <button type="submit">Speichern</button>
+      <button type="button" id="snap-test">Test-Abruf (ohne Speichern)</button>
+      <div class="hint" id="snap-msg">Das Bild landet im Eingangsverzeichnis und wird vom Worker wie ein FTP-Upload verarbeitet (Tennis: &gt; 80 KB, Padel: &gt; 20 KB; Padel braucht 00 und 01).</div>
+      <pre id="snap-status-view">Lade...</pre>
+    </form>
+  </section>
 
-  <h2>🔗 Links (erscheinen auf der Live-Seite)</h2>
-  <div id="link-list">Lade…</div>
-  <form id="link-form">
-    <input type="text" id="link-title" placeholder="Titel" required />
-    <input type="text" id="link-url" placeholder="https://…" required />
-    <input type="text" id="link-icon" placeholder="Icon (Emoji, optional)" />
-    <input type="text" id="link-image" placeholder="Bild-URL (optional, z. B. /assets/tpc_logo_75px.jpg)" />
-    <button type="submit">Link hinzufügen</button>
-    <div class="hint" id="link-status"></div>
-  </form>
+  <section class="tab" id="tab-paths">
+    <h2>Bildpfade</h2>
+    <div class="cols2">
+      <div id="path-list">Lade...</div>
+      <form id="path-form">
+        <input type="text" id="path-key" placeholder="Schluessel, z. B. tennis" required />
+        <input type="text" id="path-path" placeholder="Pfad unter /output, z. B. tennis/webcam_live.jpg" required />
+        <input type="text" id="path-label" placeholder="Anzeigename (optional)" />
+        <button type="submit">Pfad speichern</button>
+        <div class="hint" id="path-status"></div>
+      </form>
+    </div>
+    <h2 style="margin-top:1.2rem">Aktuell erreichbare Bilder</h2>
+    <div id="image-path">Lade...</div>
+  </section>
 
-  <h2>📷 Bildpfade (aktuell erreichbar)</h2>
-  <div id="image-path">Lade…</div>
+  <section class="tab" id="tab-links">
+    <h2>Links (erscheinen auf der Live-Seite)</h2>
+    <div class="cols2">
+      <div id="link-list">Lade...</div>
+      <form id="link-form">
+        <input type="text" id="link-title" placeholder="Titel" required />
+        <input type="text" id="link-url" placeholder="https://..." required />
+        <input type="text" id="link-icon" placeholder="Icon (Emoji, optional)" />
+        <input type="text" id="link-image" placeholder="Bild-URL (optional, z. B. /assets/tpc_logo_75px.jpg)" />
+        <button type="submit">Link hinzufuegen</button>
+        <div class="hint" id="link-status"></div>
+      </form>
+    </div>
+  </section>
 
-  <h2>🐍 Skript bearbeiten</h2>
-  <select id="script-select"><option value="">– vorhandenes Skript wählen… –</option></select>
-  <form id="script-form">
-    <input type="text" id="script-name" name="name" placeholder="Skriptname (aus Liste oder frei eingeben)" required />
-    <textarea id="script-code" name="code" rows="10" required></textarea>
-    <button type="submit">Skript speichern</button>
-    <div class="hint" id="script-status">Auswahl aus der Dropdown-Liste lädt den Code automatisch. Freitext ist weiterhin möglich.</div>
-  </form>
+  <section class="tab" id="tab-scripts">
+    <h2>Skript bearbeiten</h2>
+    <select id="script-select"><option value="">- vorhandenes Skript waehlen... -</option></select>
+    <form id="script-form">
+      <input type="text" id="script-name" name="name" placeholder="Skriptname (aus Liste oder frei eingeben)" required />
+      <textarea id="script-code" name="code" rows="14" required></textarea>
+      <button type="submit">Skript speichern</button>
+      <div class="hint" id="script-status">Auswahl aus der Dropdown-Liste laedt den Code automatisch. Freitext ist weiterhin moeglich.</div>
+    </form>
+  </section>
 
-  <h2>🧾 Audit (letzte Admin-Aktionen)</h2>
-  <pre id="audit-view">Lade…</pre>
+  <section class="tab" id="tab-audit">
+    <h2>Audit (letzte Admin-Aktionen)</h2>
+    <pre id="audit-view">Lade...</pre>
+  </section>
 
-  <h2>📄 Logs</h2>
-  <select id="log-file"></select>
-  <button type="button" id="log-load">🔄 Log laden</button>
-  <pre id="log-view">Noch kein Log geladen.</pre>
+  <section class="tab" id="tab-logs">
+    <h2>Logs</h2>
+    <select id="log-file"></select>
+    <button type="button" id="log-load">Log laden</button>
+    <pre id="log-view">Noch kein Log geladen.</pre>
+  </section>
 </div>
 
 <script>
 const THEME_LABELS = {
-  "default": "⭐ Standard",
-  "original": "🟠 Original",
-  "modern": "🌙 Modern dunkel",
-  "fruehjahr-hell": "🌸 Frühjahr hell",
-  "fruehjahr-dunkel": "🌸 Frühjahr dunkel",
-  "sommer-hell": "☀️ Sommer hell",
-  "sommer-dunkel": "🌙 Sommer dunkel",
-  "herbst-hell": "🍂 Herbst hell",
-  "herbst-dunkel": "🍂 Herbst dunkel",
-  "winter-hell": "❄️ Winter hell",
-  "winter-dunkel": "❄️ Winter dunkel",
-  "80s-hell": "🕹️ 80s hell",
-  "80s-dunkel": "🕹️ 80s Synthwave",
-  "70s-hell": "📻 70s hell",
-  "70s-dunkel": "📻 70s dunkel",
-  "4k-hell": "🖥️ 4K Ultra hell",
-  "4k-dunkel": "🖥️ 4K Ultra dunkel",
-  "sport-hell": "⚽ Sportlich hell",
-  "sport-dunkel": "⚽ Sportlich dunkel"
+  "default": "Standard",
+  "original": "Original",
+  "modern": "Modern dunkel",
+  "fruehjahr-hell": "Fruehjahr hell",
+  "fruehjahr-dunkel": "Fruehjahr dunkel",
+  "sommer-hell": "Sommer hell",
+  "sommer-dunkel": "Sommer dunkel",
+  "herbst-hell": "Herbst hell",
+  "herbst-dunkel": "Herbst dunkel",
+  "winter-hell": "Winter hell",
+  "winter-dunkel": "Winter dunkel",
+  "80s-hell": "80s hell",
+  "80s-dunkel": "80s Synthwave",
+  "70s-hell": "70s hell",
+  "70s-dunkel": "70s dunkel",
+  "4k-hell": "4K Ultra hell",
+  "4k-dunkel": "4K Ultra dunkel",
+  "sport-hell": "Sportlich hell",
+  "sport-dunkel": "Sportlich dunkel"
 };
+
+/* ---------------- Tabs ---------------- */
+
+function showTab(name) {
+  if (!document.getElementById("tab-" + name)) name = "system";
+  document.querySelectorAll(".tab").forEach(function (s) {
+    s.classList.toggle("active", s.id === "tab-" + name);
+  });
+  document.querySelectorAll(".tabbtn").forEach(function (b) {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+  history.replaceState(null, "", "#" + name);
+}
+
+document.getElementById("tabbar").addEventListener("click", function (ev) {
+  const btn = ev.target.closest(".tabbtn");
+  if (btn) showTab(btn.dataset.tab);
+});
+
+/* ---------------- Umgebung ---------------- */
+
+let envRevealed = false;
+
+async function loadEnv(reveal) {
+  const grid = document.getElementById("env-grid");
+  const btn = document.getElementById("env-reveal");
+  try {
+    const r = await fetch("/api/env" + (reveal ? "?reveal=1" : ""));
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
+    envRevealed = !!d.revealed;
+    grid.textContent = "";
+    (d.order || []).forEach(function (g) {
+      const items = d.groups[g];
+      if (!items || !items.length) return;
+      const card = document.createElement("div");
+      card.className = "env-card";
+      const h = document.createElement("h3");
+      h.textContent = g;
+      card.appendChild(h);
+      items.forEach(function (it) {
+        const row = document.createElement("div");
+        row.className = "env-row";
+        const k = document.createElement("div");
+        k.className = "env-key";
+        k.textContent = it.key;
+        const v = document.createElement("div");
+        v.className = "env-val" + (it.secret ? " secret" : "");
+        v.textContent = it.value === "" ? "(leer)" : it.value;
+        row.appendChild(k);
+        row.appendChild(v);
+        card.appendChild(row);
+      });
+      grid.appendChild(card);
+    });
+    btn.textContent = envRevealed ? "Geheimnisse verbergen" : "Geheimnisse anzeigen";
+  } catch (e) {
+    grid.textContent = "Fehler: " + e;
+  }
+}
+
+document.getElementById("env-reveal").addEventListener("click", function () {
+  if (!envRevealed) {
+    if (!confirm("Passwoerter, API-Key und Hashes im Klartext anzeigen? (wird im Audit protokolliert)")) return;
+    loadEnv(true);
+    loadAudit();
+  } else {
+    loadEnv(false);
+  }
+});
+
+/* ---------------- System / Theme ---------------- */
 
 async function loadThemeOptions(current) {
   const box = document.getElementById("theme-options");
@@ -193,25 +326,22 @@ async function fetchInfo() {
     const d = await r.json();
     let html = "<table>";
     html += "<tr><th>Dienst</th><td>" + d.service + " (v" + d.version + ")</td></tr>";
-    html += "<tr><th>Aktives Theme</th><td>" + d.theme + " (" + (d.themes_available || []).length + " verfügbar)</td></tr>";
+    html += "<tr><th>Aktives Theme</th><td>" + d.theme + " (" + (d.themes_available || []).length + " verfuegbar)</td></tr>";
     if (d.database) {
-      html += "<tr><th>SQLite-DB</th><td>" + d.database.path + "<br>👥 " + d.database.users +
-        " Benutzer · 🗂️ " + d.database.paths + " Pfade · 🔗 " + d.database.links + " Links · 📹 " + (d.database.cameras || 0) + " Kameras</td></tr>";
+      html += "<tr><th>SQLite-DB</th><td>" + d.database.path + "<br>" + d.database.users +
+        " Benutzer, " + d.database.paths + " Pfade, " + d.database.links + " Links, " + (d.database.cameras || 0) + " Kameras</td></tr>";
     }
     function fmtPort(p) {
-      if (!p) return "–";
+      if (!p) return "-";
       if (typeof p === "string") return p;
-      if (typeof p === "object" && p.extern) return p.extern + (p.intern ? " → " + p.intern : "");
+      if (typeof p === "object" && p.extern) return p.extern + (p.intern ? " -> " + p.intern : "");
       return String(p);
     }
-    html += "<tr><th>Ports</th><td>🌐 HTTP " + fmtPort(d.ports.http) +
-      "<br>📁 FTP " + fmtPort(d.ports.ftp) +
-      "<br>🔒 FTPS " + fmtPort(d.ports.ftps) +
-      "<br>🔑 SFTP " + fmtPort(d.ports.sftp) +
-      (d.ports.pasv_range ? "<br>📡 Passive " + d.ports.pasv_range : "") + "</td></tr>";
-    html += "<tr><th>Umgebung</th><td>" +
-      Object.entries(d.env).map(function (e) { return e[0] + " = " + e[1]; }).join("<br>") +
-      "</td></tr></table>";
+    html += "<tr><th>Ports</th><td>HTTP " + fmtPort(d.ports.http) +
+      "<br>FTP " + fmtPort(d.ports.ftp) +
+      "<br>FTPS " + fmtPort(d.ports.ftps) +
+      "<br>SFTP " + fmtPort(d.ports.sftp) +
+      (d.ports.pasv_range ? "<br>Passive " + d.ports.pasv_range : "") + "</td></tr></table>";
     document.getElementById("sysinfo").innerHTML = html;
     loadThemeOptions(d.theme);
   } catch (e) {
@@ -227,7 +357,7 @@ async function fetchImagePath() {
     if (!resp.ok) throw new Error(data.error || ("HTTP " + resp.status));
     if (data.images) {
       document.getElementById("image-path").innerHTML = Object.entries(data.images)
-        .map(function (e) { return "📷 " + e[0] + ': <a href="' + e[1] + '" target="_blank">' + e[1] + "</a>"; })
+        .map(function (e) { return e[0] + ': <a href="' + e[1] + '" target="_blank">' + e[1] + "</a>"; })
         .join("<br>");
     } else {
       document.getElementById("image-path").textContent = data.path;
@@ -249,11 +379,11 @@ document.getElementById("theme-form").addEventListener("submit", async function 
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     document.getElementById("theme-status").textContent =
-      "✅ Theme gespeichert: " + (data.theme || theme) + " – persistent in der SQLite-DB, unter /live sofort aktiv.";
+      "Theme gespeichert: " + (data.theme || theme) + " - persistent in der SQLite-DB, unter /live sofort aktiv.";
     loadThemeOptions(data.theme || theme);
     loadAudit();
   } catch (e) {
-    document.getElementById("theme-status").textContent = "❌ Fehler beim Speichern: " + e;
+    document.getElementById("theme-status").textContent = "Fehler beim Speichern: " + e;
   }
 });
 
@@ -267,18 +397,18 @@ async function loadUsers() {
     if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
     let html = "<table><tr><th>ID</th><th>Benutzer</th><th>Rolle</th><th>Letzter Login</th><th></th></tr>";
     (d.users || []).forEach(function (u) {
-      html += "<tr><td>" + u.id + "</td><td>" + u.username + "</td><td>" + u.role + "</td><td>" + (u.last_login || "–") +
-        "</td><td><button type='button' class='danger' onclick='deleteUser(" + u.id + ")'>🗑️ Löschen</button></td></tr>";
+      html += "<tr><td>" + u.id + "</td><td>" + u.username + "</td><td>" + u.role + "</td><td>" + (u.last_login || "-") +
+        "</td><td><button type='button' class='danger' onclick='deleteUser(" + u.id + ")'>Loeschen</button></td></tr>";
     });
     box.innerHTML = html + "</table>";
   } catch (e) { box.textContent = "Fehler: " + e; }
 }
 
 async function deleteUser(id) {
-  if (!confirm("Benutzer #" + id + " wirklich löschen?")) return;
+  if (!confirm("Benutzer #" + id + " wirklich loeschen?")) return;
   const r = await fetch("/api/users/" + id, { method: "DELETE" });
   const d = await r.json();
-  document.getElementById("user-status").textContent = r.ok ? "✅ Benutzer gelöscht" : "❌ " + (d.error || r.status);
+  document.getElementById("user-status").textContent = r.ok ? "Benutzer geloescht" : "Fehler: " + (d.error || r.status);
   loadUsers();
   loadAudit();
 }
@@ -295,7 +425,7 @@ document.getElementById("user-form").addEventListener("submit", async function (
   });
   const d = await r.json();
   document.getElementById("user-status").textContent = r.ok
-    ? "✅ Benutzer angelegt (ID " + d.id + ")" : "❌ " + (d.error || r.status);
+    ? "Benutzer angelegt (ID " + d.id + ")" : "Fehler: " + (d.error || r.status);
   if (r.ok) { ev.target.reset(); loadUsers(); loadAudit(); }
 });
 
@@ -309,8 +439,8 @@ async function loadCameras() {
     let html = "<table><tr><th>Aktiv</th><th>UID</th><th>Name</th><th>IP</th><th>Einsatzort</th><th>Offene Ports</th><th></th></tr>";
     (d.cameras || []).forEach(function (c) {
       html += "<tr><td><input type='checkbox' " + (c.active ? "checked " : "") + "onchange='toggleCamera(" + c.id + ", this.checked)' /></td>" +
-        "<td>" + c.uid + "</td><td>" + c.name + "</td><td>" + (c.ip || "–") + "</td><td>" + (c.location || "–") + "</td><td>" + (c.ports || "–") + "</td>" +
-        "<td><button type='button' class='danger' onclick='deleteCamera(" + c.id + ")'>🗑️</button></td></tr>";
+        "<td>" + c.uid + "</td><td>" + c.name + "</td><td>" + (c.ip || "-") + "</td><td>" + (c.location || "-") + "</td><td>" + (c.ports || "-") + "</td>" +
+        "<td><button type='button' class='danger' onclick='deleteCamera(" + c.id + ")'>X</button></td></tr>";
     });
     box.innerHTML = html + "</table>";
   } catch (e) { box.textContent = "Fehler: " + e; }
@@ -322,14 +452,14 @@ async function toggleCamera(id, active) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ active: active })
   });
-  if (!r.ok) document.getElementById("camera-status").textContent = "❌ Fehler beim Umschalten";
+  if (!r.ok) document.getElementById("camera-status").textContent = "Fehler beim Umschalten";
   loadAudit();
 }
 
 async function deleteCamera(id) {
-  if (!confirm("Kamera #" + id + " wirklich löschen?")) return;
+  if (!confirm("Kamera #" + id + " wirklich loeschen?")) return;
   const r = await fetch("/api/cameras/" + id, { method: "DELETE" });
-  document.getElementById("camera-status").textContent = r.ok ? "✅ Kamera gelöscht" : "❌ Fehler beim Löschen";
+  document.getElementById("camera-status").textContent = r.ok ? "Kamera geloescht" : "Fehler beim Loeschen";
   loadCameras();
   loadAudit();
 }
@@ -351,7 +481,7 @@ document.getElementById("camera-form").addEventListener("submit", async function
   });
   const d = await r.json();
   document.getElementById("camera-status").textContent = r.ok
-    ? "✅ Kamera angelegt (ID " + d.id + ")" : "❌ " + (d.error || r.status);
+    ? "Kamera angelegt (ID " + d.id + ")" : "Fehler: " + (d.error || r.status);
   if (r.ok) { ev.target.reset(); document.getElementById("cam-active").checked = true; loadCameras(); loadAudit(); }
 });
 
@@ -362,7 +492,7 @@ async function loadPaths() {
   try {
     const r = await fetch("/api/paths");
     const d = await r.json();
-    let html = "<table><tr><th>Schlüssel</th><th>Pfad</th><th>Label</th></tr>";
+    let html = "<table><tr><th>Schluessel</th><th>Pfad</th><th>Label</th></tr>";
     (d.paths || []).forEach(function (p) {
       html += "<tr><td>" + p.key + "</td><td>/output/" + p.path + "</td><td>" + p.label + "</td></tr>";
     });
@@ -382,7 +512,7 @@ document.getElementById("path-form").addEventListener("submit", async function (
     })
   });
   const d = await r.json();
-  document.getElementById("path-status").textContent = r.ok ? "✅ Pfad gespeichert" : "❌ " + (d.error || r.status);
+  document.getElementById("path-status").textContent = r.ok ? "Pfad gespeichert" : "Fehler: " + (d.error || r.status);
   if (r.ok) { loadPaths(); fetchImagePath(); loadAudit(); }
 });
 
@@ -395,9 +525,9 @@ async function loadLinksAdmin() {
     const d = await r.json();
     let html = "<table><tr><th>Bild</th><th>Icon</th><th>Titel</th><th>URL</th><th></th></tr>";
     (d.links || []).forEach(function (l) {
-      const img = l.image ? "<img class='link-thumb' src='" + l.image + "' alt='' />" : "–";
+      const img = l.image ? "<img class='link-thumb' src='" + l.image + "' alt='' />" : "-";
       html += "<tr><td>" + img + "</td><td>" + l.icon + "</td><td>" + l.title + "</td><td><a href='" + l.url + "' target='_blank'>" + l.url + "</a>" +
-        "</td><td><button type='button' class='danger' onclick='deleteLink(" + l.id + ")'>🗑️</button></td></tr>";
+        "</td><td><button type='button' class='danger' onclick='deleteLink(" + l.id + ")'>X</button></td></tr>";
     });
     box.innerHTML = html + "</table>";
   } catch (e) { box.textContent = "Fehler: " + e; }
@@ -405,7 +535,7 @@ async function loadLinksAdmin() {
 
 async function deleteLink(id) {
   const r = await fetch("/api/links/" + id, { method: "DELETE" });
-  document.getElementById("link-status").textContent = r.ok ? "✅ Link gelöscht" : "❌ Fehler beim Löschen";
+  document.getElementById("link-status").textContent = r.ok ? "Link geloescht" : "Fehler beim Loeschen";
   loadLinksAdmin();
   loadAudit();
 }
@@ -423,7 +553,7 @@ document.getElementById("link-form").addEventListener("submit", async function (
     })
   });
   const d = await r.json();
-  document.getElementById("link-status").textContent = r.ok ? "✅ Link hinzugefügt" : "❌ " + (d.error || r.status);
+  document.getElementById("link-status").textContent = r.ok ? "Link hinzugefuegt" : "Fehler: " + (d.error || r.status);
   if (r.ok) { ev.target.reset(); loadLinksAdmin(); loadAudit(); }
 });
 
@@ -434,7 +564,7 @@ async function loadScripts() {
   try {
     const r = await fetch("/api/scripts");
     const d = await r.json();
-    sel.innerHTML = '<option value="">– vorhandenes Skript wählen… –</option>';
+    sel.innerHTML = '<option value="">- vorhandenes Skript waehlen... -</option>';
     (d.scripts || []).forEach(function (s) {
       const o = document.createElement("option");
       o.value = s.name;
@@ -453,9 +583,9 @@ document.getElementById("script-select").addEventListener("change", async functi
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || ("HTTP " + r.status));
     document.getElementById("script-code").value = d.code;
-    document.getElementById("script-status").textContent = "📂 " + name + " geladen – bereit zum Bearbeiten.";
+    document.getElementById("script-status").textContent = name + " geladen - bereit zum Bearbeiten.";
   } catch (e) {
-    document.getElementById("script-status").textContent = "❌ Fehler beim Laden: " + e;
+    document.getElementById("script-status").textContent = "Fehler beim Laden: " + e;
   }
 });
 
@@ -470,11 +600,11 @@ document.getElementById("script-form").addEventListener("submit", async function
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || ("HTTP " + resp.status));
-    document.getElementById("script-status").textContent = "✅ " + (data.status || "Skript gespeichert");
+    document.getElementById("script-status").textContent = (data.status || "Skript gespeichert");
     loadScripts();
     loadAudit();
   } catch (e) {
-    document.getElementById("script-status").textContent = "❌ Fehler: " + e;
+    document.getElementById("script-status").textContent = "Fehler: " + e;
   }
 });
 
@@ -487,7 +617,7 @@ async function loadAudit() {
     const d = await r.json();
     box.textContent = (d.entries && d.entries.length)
       ? d.entries.map(function (e) { return e.ts + "  " + (e.actor || "-") + "  " + e.action + "  " + (e.details || ""); }).join("\n")
-      : "(noch keine Einträge)";
+      : "(noch keine Eintraege)";
   } catch (e) { box.textContent = "Fehler: " + e; }
 }
 
@@ -495,7 +625,7 @@ async function loadAudit() {
 
 function renderLog(d) {
   document.getElementById("log-view").textContent =
-    (d.lines && d.lines.length) ? d.lines.join("\n") : "(leer – noch keine Einträge)";
+    (d.lines && d.lines.length) ? d.lines.join("\n") : "(leer - noch keine Eintraege)";
 }
 
 async function initLogs() {
@@ -522,7 +652,9 @@ document.getElementById("log-load").addEventListener("click", async function () 
   renderLog(await r.json());
 });
 
+showTab((location.hash || "").replace("#", "") || "system");
 fetchInfo();
+loadEnv(false);
 fetchImagePath();
 initLogs();
 loadUsers();
