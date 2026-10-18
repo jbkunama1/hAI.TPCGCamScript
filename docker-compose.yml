@@ -9,15 +9,21 @@ services:
       - "2222:22"
       - "9900:990"
       - "30000-30010:30000-30010"
-    env_file:
-      - .env
     environment:
       TZ: ${TZ:-Europe/Berlin}
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_PASS_HASH: ${ADMIN_PASS_HASH:-}
       API_KEY: ${API_KEY}
       DATA_ROOT: /data
       PASV_ADDRESS: ${PASV_ADDRESS:-}
+      FTP_USER: ${FTP_USER:-}
+      FTP_PASS: ${FTP_PASS:-}
+      TRANSFER_USER: ${TRANSFER_USER:-}
+      TRANSFER_PASSWORD: ${TRANSFER_PASSWORD:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      PROCESS_INTERVAL_SECONDS: ${PROCESS_INTERVAL_SECONDS:-30}
+      WORKER_LOG_INTERVAL_SECONDS: ${WORKER_LOG_INTERVAL_SECONDS:-300}
     volumes:
       - /opt/hai-tpcg-cam-script/data:/data
     networks:
