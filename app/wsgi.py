@@ -11,10 +11,12 @@ snapshot.register(main.app, main.require_auth, main._actor)
 
 ENV_GROUPS = [
     ("Auth & API", ("ADMIN_", "API_KEY")),
-    ("FTP/SSH-Variablen", ("PASV_", "FTP", "SFTP", "SSH")),
-    ("App & Worker", ("APP_", "DATA_", "TZ", "WORKER_", "LOG_", "PROCESS_", "OLLAMA", "DB_")),
+    ("FTP/SSH-Variablen", ("PASV_", "FTP", "SFTP", "SSH", "TRANSFER_")),
+    ("App & Worker", ("APP_", "DATA_", "TZ", "WORKER_", "LOG_", "PROCESS_", "OLLAMA", "DB_", "PUBLIC_")),
 ]
 ENV_ORDER = ["FTP-Zugang", "Auth & API", "FTP/SSH-Variablen", "App & Worker", "System"]
+FTP_USER_VARS = ("FTP_USER", "FTP_USERNAME", "FTPUSER", "TRANSFER_USER")
+FTP_PASS_VARS = ("FTP_PASS", "FTP_PASSWORD", "FTPPASS", "TRANSFER_PASSWORD")
 
 
 def _env_group(key):
@@ -25,11 +27,24 @@ def _env_group(key):
     return "System"
 
 
+def _first_set(names):
+    for n in names:
+        v = os.getenv(n, "")
+        if v:
+            return n, v
+    return None, ""
+
+
 def _ftp_info():
     host = os.getenv("PASV_ADDRESS", "")
+    u_src, u_val = _first_set(FTP_USER_VARS)
+    p_src, _ = _first_set(FTP_PASS_VARS)
+    user = (u_val + " (aus " + u_src + ")") if u_src else "ftpuser (Standard - FTP_USER nicht gesetzt)"
+    pw = ("gesetzt (aus " + p_src + ")") if p_src else "STANDARD 'password' - FTP_PASS nicht gesetzt!"
     rows = [
         ("Host (PASV_ADDRESS)", host or "NICHT GESETZT - Passiv-Modus von aussen gestoert"),
-        ("Benutzer", "ftpuser (im Dockerfile fest)"),
+        ("Benutzer", user),
+        ("Passwort", pw),
         ("FTP / explizites FTPS", "extern 21 -> intern 21"),
         ("Implizites FTPS", "extern 9900 -> intern 990"),
         ("SFTP", "extern 2222 -> intern 22"),
